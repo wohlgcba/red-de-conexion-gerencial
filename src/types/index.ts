@@ -1,8 +1,10 @@
-export type NewsletterStatus = 'borrador' | 'pendiente' | 'publicado' | 'cambios' | 'archivado'
+export type NewsletterStatus = 'borrador' | 'pendiente' | 'publicado' | 'cambios' | 'archivado' | 'rechazado'
 
 export interface Person {
   id: string
   name: string
+  givenName: string
+  familyName: string
   role: string
   directorate: string
   ministry: string
@@ -10,10 +12,12 @@ export interface Person {
   email: string
   phone: string
   topics: string[]
+  advisoryTopicsRaw: string
   bio: string
   avatar: number
   newsletterIds: string[]
-  isDirector?: boolean
+  directorateId?: string | null
+  version?: number
 }
 
 export interface Directorate {
@@ -25,6 +29,7 @@ export interface Directorate {
   topics: string[]
   featuredPersonIds: string[]
   summary: string
+  version?: number
 }
 
 export interface Newsletter {
@@ -44,4 +49,6 @@ export interface Newsletter {
   quote?: string
   tags: string[]
   observation?: string
+  imagePath?: string | null
+  version?: number
 }

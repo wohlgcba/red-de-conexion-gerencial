@@ -1,49 +1,117 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getNewsletters } from '../services/catalog'
-import type { Newsletter, NewsletterStatus } from '../types'
-import { NewsletterContext } from './useNewsletters'
+import type { User } from '@supabase/supabase-js'
+import { LoginPage } from '../pages/LoginPage'
+import { requireSupabase, supabase } from '../lib/supabase'
+import * as catalog from '../services/catalog'
+import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
+import { CatalogContext } from './useCatalog'
 
 export type Store = {
+  user: User
+  people: Person[]
+  directorates: Directorate[]
   items: Newsletter[]
-  upsert: (item: Newsletter) => void
-  updateStatus: (id: string, status: NewsletterStatus) => void
-  duplicate: (id: string) => string | undefined
-}
-
-const key = 'rcg-demo-newsletters-v1'
-
-function loadItems(): Newsletter[] {
-  try {
-    const saved = window.localStorage.getItem(key)
-    if (!saved) return getNewsletters()
-    const parsed: unknown = JSON.parse(saved)
-    return Array.isArray(parsed) ? parsed as Newsletter[] : getNewsletters()
-  } catch {
-    return getNewsletters()
-  }
+  currentPersonId: string | null
+  isAdmin: boolean
+  refresh: () => Promise<void>
+  signOut: () => Promise<void>
+  savePerson: (person: Parameters<typeof catalog.savePerson>[0]) => Promise<void>
+  deletePerson: (id: string) => Promise<void>
+  saveDirectorate: (item: Parameters<typeof catalog.saveDirectorate>[0]) => Promise<void>
+  deleteDirectorate: (id: string) => Promise<void>
+  upsert: (item: Newsletter) => Promise<string>
+  updateStatus: (id: string, status: NewsletterStatus) => Promise<void>
+  duplicate: (id: string) => Promise<string>
+  deleteNewsletter: (id: string) => Promise<void>
+  reviewNewsletter: (id: string, status: NewsletterStatus, note: string, featured: boolean) => Promise<void>
+  uploadCover: (file: File) => Promise<string>
+  removeCover: (path: string) => Promise<void>
 }
 
 export function NewsletterProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<Newsletter[]>(loadItems)
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(Boolean(supabase))
+  const [dataLoading, setDataLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [people, setPeople] = useState<Person[]>([])
+  const [directorates, setDirectorates] = useState<Directorate[]>([])
+  const [items, setItems] = useState<Newsletter[]>([])
+  const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
-  const commit = (next: Newsletter[]) => {
-    setItems(next)
-    try { window.localStorage.setItem(key, JSON.stringify(next)) } catch { /* Sigue funcionando en memoria si se agota el espacio local. */ }
-  }
+  useEffect(() => {
+    if (!supabase) return
+    let active = true
+    void supabase.auth.getUser().then(({ data }) => {
+      if (active) { setUser(data.user); setAuthLoading(false) }
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) { setUser(session?.user ?? null); setDataLoading(true); setAuthLoading(false) }
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
 
-  const value = useMemo<Store>(() => ({
-    items,
-    upsert: item => commit([item, ...items.filter(existing => existing.id !== item.id)]),
-    updateStatus: (id, status) => commit(items.map(item => item.id === id ? { ...item, status, updatedAt: new Date().toISOString().slice(0, 10) } : item)),
-    duplicate: id => {
+  const refresh = useCallback(async () => {
+    if (!user) return
+    try {
+      const access = await catalog.getAccess()
+      setError('')
+      setCurrentPersonId(access.personId)
+      setIsAdmin(access.isAdmin)
+      if (!access.personId && !access.isAdmin) {
+        setPeople([]); setDirectorates([]); setItems([])
+        return
+      }
+      const peopleResult = await catalog.getPeople()
+      const [directoratesResult, newslettersResult] = await Promise.all([
+        catalog.getDirectorates(peopleResult), catalog.getNewsletters(),
+      ])
+      const directoryNames = new Map(directoratesResult.map(item => [item.id, item.name]))
+      setPeople(peopleResult.map(person => ({ ...person, directorate: person.directorateId ? directoryNames.get(person.directorateId) ?? person.directorate : person.directorate })))
+      setDirectorates(directoratesResult)
+      setItems(newslettersResult)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos.')
+    } finally {
+      setDataLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    const timer = window.setTimeout(() => void refresh(), 0)
+    return () => window.clearTimeout(timer)
+  }, [user, refresh])
+
+  if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de Conexión Gerencial</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
+  if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
+  if (!user) return <LoginPage />
+  if (dataLoading) return <div className="auth-screen">Cargando la Red...</div>
+  if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>
+  if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu correo no está vinculado al directorio de la Red. Contactá a la administración si corresponde incorporarte.</p><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
+
+  const value: Store = {
+    user, people, directorates, items, currentPersonId, isAdmin, refresh,
+    signOut: async () => { const { error: signOutError } = await requireSupabase().auth.signOut(); if (signOutError) throw signOutError },
+    savePerson: async person => { await catalog.savePerson(person); await refresh() },
+    deletePerson: async id => { await catalog.deletePerson(id); await refresh() },
+    saveDirectorate: async item => { await catalog.saveDirectorate(item); await refresh() },
+    deleteDirectorate: async id => { await catalog.deleteDirectorate(id); await refresh() },
+    upsert: async item => { const id = await catalog.saveNewsletter(item); await refresh(); return id },
+    updateStatus: async (id, status) => { const item = items.find(entry => entry.id === id); if (!item) throw new Error('Newsletter no encontrado'); await catalog.updateNewsletterStatus(item, status); await refresh() },
+    duplicate: async id => {
       const source = items.find(item => item.id === id)
-      if (!source) return undefined
-      const newId = crypto.randomUUID()
-      commit([{ ...source, id: newId, title: `${source.title} (copia)`, status: 'borrador', featured: false, updatedAt: new Date().toISOString().slice(0, 10) }, ...items])
+      if (!source || !currentPersonId) throw new Error('No se puede duplicar este newsletter.')
+      const copy: Newsletter = { ...source, id: '', title: `${source.title} (copia)`, authorId: currentPersonId, status: 'borrador', featured: false, observation: undefined, version: undefined }
+      const newId = await catalog.saveNewsletter(copy)
+      await refresh()
       return newId
     },
-  }), [items])
-
-  return <NewsletterContext.Provider value={value}>{children}</NewsletterContext.Provider>
+    deleteNewsletter: async id => { const path = items.find(item => item.id === id)?.imagePath; await catalog.deleteNewsletter(id); if (path) await catalog.removeCover(path).catch(() => undefined); await refresh() },
+    reviewNewsletter: async (id, status, note, featured) => { const item = items.find(entry => entry.id === id); if (!item?.version) throw new Error('Newsletter no encontrado'); await catalog.reviewNewsletter(id, item.version, status, note, featured); await refresh() },
+    uploadCover: file => catalog.uploadCover(file, user.id),
+    removeCover: catalog.removeCover,
+  }
+  return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
 }

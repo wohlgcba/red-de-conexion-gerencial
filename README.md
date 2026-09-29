@@ -1,29 +1,28 @@
 # Red de Conexión Gerencial
 
-Frontend React + Vite + TypeScript con datos ficticios locales.
+Aplicación React, Vite y TypeScript conectada al schema `red_conexion_gerencial`
+del proyecto Supabase **BASE GCBA** (`pnhskmlejdaklwkvasxp`). Se publica en
+https://red-de-conexion-gerencial.vercel.app.
 
-Versión publicada: https://red-de-conexion-gerencial.vercel.app
+Para ejecutar localmente, copiá `.env.example` a `.env.local`, completá la URL y
+la clave **publicable** de ese proyecto y ejecutá `npm install` y `npm run dev`.
+Nunca uses una clave secreta o `service_role` en una variable `VITE_*`.
 
-El archivo XLSX local no forma parte del repositorio. La aplicación todavía muestra datos ficticios.
+El directorio contiene 590 personas importadas del XLSX local; el XLSX y los
+datos personales no se versionan. Las 350 Direcciones Generales derivadas del
+texto original conservan variantes de escritura para evitar fusiones erróneas.
+Los newsletters comienzan vacíos y se crean desde la aplicación.
 
-Los 590 registros vigentes del directorio se importaron al schema privado
-`red_conexion_gerencial` del proyecto Supabase `BASE GCBA`. El schema no está
-expuesto a la Data API; `anon`, `authenticated` y `service_role` no tienen
-permisos sobre él. La tabla tiene RLS activo y ninguna política de acceso.
-No se importaron CUIT, registros eliminados, administradores ni trazas de uso.
+`supabase/red_conexion_gerencial.sql` contiene la base inicial y
+`supabase/rcg_crud.sql` agrega las tablas, funciones, permisos y políticas del
+CRUD. `supabase/rcg_grant_admin.sql` habilita la cuenta administradora una vez
+creada y confirmada en Supabase Auth. La clave publicable puede estar en el
+frontend; las contraseñas y claves secretas no deben guardarse en este repo.
 
-La definición reproducible está en `supabase/red_conexion_gerencial.sql` y el
-importador, que requiere el XLSX local y una sesión CLI autenticada, está en
-`scripts/import_people.py`. No conectar la web a estos datos hasta implementar
-autenticación, autorización y políticas de lectura verificadas.
+La Data API expone este schema para usuarios autenticados. RLS bloquea a los
+anónimos, limita la escritura del directorio a administradores y vincula cada
+newsletter a la identidad del autor. Las portadas se almacenan en el bucket
+privado `rcg-newsletters`.
 
-Desde esta carpeta:
-
-```powershell
-npm install
-npm run dev
-```
-
-Abrí la dirección local que muestre Vite (normalmente `http://localhost:5173`).
-
-Verificaciones disponibles: `npm run lint`, `npm run typecheck` y `npm run build`.
+Comprobaciones: `npm run lint`, `npm run typecheck`, `npm run build` y las
+consultas transaccionales `supabase/rcg_*_check.sql`.
