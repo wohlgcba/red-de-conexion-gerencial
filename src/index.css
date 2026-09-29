@@ -73,5 +73,8 @@
 .auth-card form small{color:#6d8aaa;font-size:11px;line-height:1.45}
 .auth-signout{margin-top:16px;width:100%}
 .auth-link-button{display:block;width:100%;border:0;background:none;color:#0b568a;text-decoration:underline;cursor:pointer;margin-top:12px;font-size:11px}
+.brand-mark{display:flex;align-items:center;justify-content:flex-end;flex:none;z-index:1}
+.brand-mark img{width:188px;height:auto;max-height:56px;object-fit:contain}
+@media(max-width:650px){.brand-mark img{width:100px;max-height:40px}}
 @media(max-width:900px){.profile-panel-wrap .admin-panel-actions{position:fixed;z-index:13;right:0;bottom:0;width:min(100vw,460px);border-radius:0}.profile-panel-wrap .profile-panel{padding-bottom:75px}}
 @media(max-width:650px){.crud-form{grid-template-columns:1fr}.crud-form label:nth-last-of-type(-n+2){grid-column:auto}.nav-user{display:none}.auth-card{padding:22px}.admin-newsletter-row .status{display:none}}
