@@ -5,7 +5,7 @@ import { requireSupabase } from '../lib/supabase'
 function loginErrorMessage(error: unknown): string {
   const detail = error instanceof Error ? error.message : ''
   if (/invalid login credentials/i.test(detail)) {
-    return 'No pudimos validar esa cuenta. Revisá el correo, la contraseña y que el usuario esté confirmado en BASE GCBA.'
+    return 'Correo o contraseña incorrectos. Si ya tenés cuenta, usá tu clave actual o ingresá con el enlace por correo.'
   }
   if (/failed to fetch|non ISO-8859-1/i.test(detail)) {
     return 'No se pudo conectar con el servicio de acceso. Intentá de nuevo en unos momentos.'
@@ -84,7 +84,7 @@ export function LoginPage() {
             </button>
           </span>
         </label>}
-        {mode === 'password' && <small>Primer ingreso: usá tu CUIT de 11 dígitos, sin guiones. Si ya tenés cuenta en Hub Red de Enlaces, usá tu contraseña actual.</small>}
+        {mode === 'password' && <small>Integrantes nuevos: el primer ingreso será con CUIT de 11 dígitos, sin guiones, y después deberán elegir una contraseña. Las cuentas existentes, incluida la administración, pueden ingresar con su clave actual o con el enlace por correo.</small>}
         <button className="btn btn-yellow" type="submit" disabled={busy}>{busy ? 'Ingresando...' : mode === 'link' ? 'Enviar enlace de acceso' : 'Ingresar'} <ArrowRight size={17} /></button>
       </form>
       {needsEmailVerification && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('verify')}>Enviar enlace de verificación</button>}
