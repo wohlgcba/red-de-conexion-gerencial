@@ -45,6 +45,12 @@ export async function getAccess(): Promise<{ personId: string | null; isAdmin: b
   return { personId: typeof person.data === 'string' ? person.data : null, isAdmin: admin.data === true }
 }
 
+export async function mustChangeInitialPassword(): Promise<boolean> {
+  const { data, error } = await db().rpc('get_my_account_status')
+  check(error)
+  return Array.isArray(data) && data.some(row => row.must_change_password === true)
+}
+
 export async function savePerson(person: Partial<Person> & Pick<Person, 'givenName' | 'familyName' | 'role' | 'ministry' | 'email'>): Promise<void> {
   const values = { given_name: person.givenName.trim(), family_name: person.familyName.trim(), position_title: person.role.trim(), ministry: person.ministry.trim(), secretariat: person.secretariat?.trim() ?? '', directorate: person.directorate?.trim() ?? '', directorate_id: person.directorateId ?? null, phone: person.phone?.trim() ?? '', email: person.email.trim().toLowerCase(), advisory_topics: person.advisoryTopicsRaw ?? person.topics?.join('; ') ?? '', bio: person.bio?.trim() ?? '' }
   if (person.id) {

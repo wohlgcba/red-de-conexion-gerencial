@@ -2,16 +2,17 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { LoginPage } from '../pages/LoginPage'
+import { PasswordChangeForm } from '../components/common/PasswordChangeForm'
 import { requireSupabase, supabase } from '../lib/supabase'
 import * as catalog from '../services/catalog'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 
-async function getAccessWithClockRetry() {
+async function withClockRetry<T>(operation: () => Promise<T>): Promise<T> {
   for (const delay of [0, 1500, 4000]) {
     if (delay) await new Promise<void>(resolve => window.setTimeout(resolve, delay))
     try {
-      return await catalog.getAccess()
+      return await operation()
     } catch (cause) {
       if (!(cause instanceof Error) || !/JWT issued at future/i.test(cause.message)) throw cause
     }
@@ -51,6 +52,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Newsletter[]>([])
   const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [mustChangePassword, setMustChangePassword] = useState(false)
 
   useEffect(() => {
     if (!supabase) return
@@ -67,7 +69,15 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!user) return
     try {
-      const access = await getAccessWithClockRetry()
+      const changeRequired = await withClockRetry(catalog.mustChangeInitialPassword)
+      setMustChangePassword(changeRequired)
+      if (changeRequired) {
+        setError('')
+        setCurrentPersonId(null)
+        setIsAdmin(false)
+        return
+      }
+      const access = await withClockRetry(catalog.getAccess)
       setError('')
       setCurrentPersonId(access.personId)
       setIsAdmin(access.isAdmin)
@@ -101,6 +111,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (!user) return <LoginPage />
   if (dataLoading) return <div className="auth-screen">Cargando la Red...</div>
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>
+  if (mustChangePassword) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Redes · Desde adentro</div><h1>Elegí una contraseña nueva</h1><p>Para proteger tu cuenta, cambiá la contraseña inicial antes de ingresar al directorio.</p><PasswordChangeForm firstAccess onComplete={refresh} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
 
   const value: Store = {

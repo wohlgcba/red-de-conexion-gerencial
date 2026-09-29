@@ -20,26 +20,47 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false)
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setMessage('')
+    setNeedsEmailVerification(false)
     try {
       const client = requireSupabase()
       const result = mode === 'link'
         ? await client.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: `${window.location.origin}/newsletters` },
+          options: { emailRedirectTo: `${window.location.origin}/newsletters`, shouldCreateUser: false },
         })
         : await client.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
       if (result.error) throw result.error
       if (mode === 'link') setMessage('Revisá tu correo y abrí el enlace para ingresar.')
     } catch (error) {
-      setMessage(loginErrorMessage(error))
+      const detail = error instanceof Error ? error.message : ''
+      if (/email not confirmed|email_not_confirmed/i.test(detail)) {
+        setNeedsEmailVerification(true)
+        setMessage('Primero tenés que verificar tu correo. Pedí el enlace de confirmación y abrilo desde tu casilla.')
+      } else setMessage(loginErrorMessage(error))
     } finally {
       setBusy(false)
     }
+  }
+
+  const sendEmail = async (type: 'verify' | 'reset') => {
+    if (!email.trim()) { setMessage('Ingresá tu correo electrónico primero.'); return }
+    setBusy(true)
+    setMessage('')
+    try {
+      const client = requireSupabase()
+      const result = type === 'verify'
+        ? await client.auth.resend({ type: 'signup', email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/newsletters` } })
+        : await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/mi-cuenta` })
+      if (result.error) throw result.error
+      setMessage(type === 'verify' ? 'Si tu cuenta está pendiente, recibirás un enlace de verificación.' : 'Si tu cuenta existe, recibirás un enlace para cambiar la contraseña.')
+    } catch (error) { setMessage(loginErrorMessage(error)) }
+    finally { setBusy(false) }
   }
 
   return <div className="auth-screen">
@@ -63,8 +84,11 @@ export function LoginPage() {
             </button>
           </span>
         </label>}
+        {mode === 'password' && <small>Primer ingreso: usá tu CUIT de 11 dígitos, sin guiones. Si ya tenés cuenta en Hub Red de Enlaces, usá tu contraseña actual.</small>}
         <button className="btn btn-yellow" type="submit" disabled={busy}>{busy ? 'Ingresando...' : mode === 'link' ? 'Enviar enlace de acceso' : 'Ingresar'} <ArrowRight size={17} /></button>
       </form>
+      {needsEmailVerification && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('verify')}>Enviar enlace de verificación</button>}
+      {mode === 'password' && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('reset')}>Olvidé mi contraseña</button>}
       {message && <p className="auth-message" role="status">{message}</p>}
       <small>El acceso a los datos está reservado a integrantes y administradores habilitados.</small>
     </div>
