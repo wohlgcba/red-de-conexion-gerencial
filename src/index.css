@@ -68,5 +68,6 @@
 .password-field button{position:absolute;top:50%;right:8px;transform:translateY(-50%);display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:6px;background:transparent;color:#416c9b;cursor:pointer}
 .password-field button:hover{background:#edf5fb;color:#07527c}
 .password-field button:focus-visible{outline:2px solid #0872b7;outline-offset:2px}
+.auth-card>button+button{margin-left:8px}
 @media(max-width:900px){.profile-panel-wrap .admin-panel-actions{position:fixed;z-index:13;right:0;bottom:0;width:min(100vw,460px);border-radius:0}.profile-panel-wrap .profile-panel{padding-bottom:75px}}
 @media(max-width:650px){.crud-form{grid-template-columns:1fr}.crud-form label:nth-last-of-type(-n+2){grid-column:auto}.nav-user{display:none}.auth-card{padding:22px}.admin-newsletter-row .status{display:none}}

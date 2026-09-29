@@ -7,6 +7,18 @@ import * as catalog from '../services/catalog'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 
+async function getAccessWithClockRetry() {
+  for (const delay of [0, 1500, 4000]) {
+    if (delay) await new Promise<void>(resolve => window.setTimeout(resolve, delay))
+    try {
+      return await catalog.getAccess()
+    } catch (cause) {
+      if (!(cause instanceof Error) || !/JWT issued at future/i.test(cause.message)) throw cause
+    }
+  }
+  throw new Error('La sesión todavía no fue aceptada por el servidor. Esperá unos segundos y presioná Reintentar.')
+}
+
 export type Store = {
   user: User
   people: Person[]
@@ -55,7 +67,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!user) return
     try {
-      const access = await catalog.getAccess()
+      const access = await getAccessWithClockRetry()
       setError('')
       setCurrentPersonId(access.personId)
       setIsAdmin(access.isAdmin)
@@ -89,7 +101,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (!user) return <LoginPage />
   if (dataLoading) return <div className="auth-screen">Cargando la Red...</div>
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>
-  if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu correo no está vinculado al directorio de la Red. Contactá a la administración si corresponde incorporarte.</p><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
+  if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
 
   const value: Store = {
     user, people, directorates, items, currentPersonId, isAdmin, refresh,
