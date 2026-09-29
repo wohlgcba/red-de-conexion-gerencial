@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 *.xlsx
+__pycache__/
+*.pyc
 .env
 .env.*
 !.env.example
