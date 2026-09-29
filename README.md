@@ -2,6 +2,10 @@
 
 Frontend React + Vite + TypeScript con datos ficticios locales.
 
+Versión publicada: https://red-de-conexion-gerencial.vercel.app
+
+El archivo XLSX local no forma parte del repositorio. La aplicación todavía muestra datos ficticios.
+
 Desde esta carpeta:
 
 ```powershell
