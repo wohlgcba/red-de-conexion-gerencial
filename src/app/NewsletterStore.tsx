@@ -7,6 +7,7 @@ import { requireSupabase, supabase } from '../lib/supabase'
 import * as catalog from '../services/catalog'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
+import { DirectoryLoading } from '../components/directory/DirectoryLoading'
 
 async function withClockRetry<T>(operation: () => Promise<T>): Promise<T> {
   for (const delay of [0, 1500, 4000]) {
@@ -109,7 +110,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de Conexión Gerencial</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
   if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
   if (!user) return <LoginPage />
-  if (dataLoading) return <div className="auth-screen">Cargando la Red...</div>
+  if (dataLoading) return window.location.pathname.replace(/\/$/, '') === '/directorio' ? <DirectoryLoading /> : <div className="auth-screen">Cargando la Red...</div>
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>
   if (mustChangePassword) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Redes · Desde adentro</div><h1>Elegí una contraseña nueva</h1><p>Para proteger tu cuenta, cambiá la contraseña inicial antes de ingresar al directorio.</p><PasswordChangeForm firstAccess onComplete={refresh} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>

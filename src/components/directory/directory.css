@@ -1,0 +1,196 @@
+.directory-page { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.directory-page-intro { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 22px 25px; }
+.directory-title-block { flex: 1; min-width: 0; }
+.directory-title-block h1 { font-size: clamp(25px, 2vw, 33px); font-weight: 700; line-height: 1.2; letter-spacing: -.035em; color: #062f68; }
+.directory-title-block p { max-width: 610px; margin-top: 6px; font-size: 12px; line-height: 1.6; color: #5276a4; }
+.directory-summary { flex: 1.25; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; min-width: 0; }
+.directory-summary > .btn { min-height: 35px; font-size: 11px; }
+.directory-kpis { width: 100%; display: grid; grid-template-columns: .8fr 1.2fr 1fr; gap: 12px; }
+.directory-kpis > div { display: flex; align-items: center; gap: 12px; border: 1px solid #deecf6; border-radius: 11px; padding: 13px; min-width: 0; min-height: 78px; }
+.directory-kpis > div > span { display: flex; align-items: center; justify-content: center; width: 43px; height: 43px; flex: none; border-radius: 50%; background: #eaf7fd; color: #0560a2; }
+.directory-kpis p { font-size: 10px; color: #5577a3; line-height: 1.35; }
+.directory-kpis strong { display: block; margin-top: 5px; color: #073268; font-size: 24px; line-height: 1; }
+.directory-layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 14px; align-items: start; }
+.directory-sidebar { min-width: 0; padding: 20px 17px 22px; }
+.directory-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 23px; }
+.directory-filter-heading h2 { display: flex; align-items: center; gap: 7px; font-size: 16px; color: #082e67; }
+.directory-filter-heading > button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: #23699a; font-size: 9px; padding: 5px 0; }
+.directory-filter-heading > button:hover { color: #034375; text-decoration: underline; }
+.directory-filter-field { margin-top: 20px; min-width: 0; }
+.directory-filter-field > label:first-child { display: block; color: #173d70; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+.directory-filter-field .select-wrap { width: 100%; min-width: 0; height: 42px; border-radius: 8px; }
+.directory-filter-field select { min-width: 0; font-size: 10px; font-weight: 400; text-overflow: ellipsis; padding-left: 10px; }
+.directory-filter-field small { display: block; margin-top: 9px; color: #6a86a2; font-size: 9px; line-height: 1.5; }
+.directory-listing { min-width: 0; padding: 18px; }
+.directory-toolbar { display: flex; align-items: flex-end; gap: 14px; min-width: 0; }
+.directory-search { flex: 1; min-width: 0; height: 44px; border-radius: 9px; }
+.directory-search > svg { flex: none; }
+.directory-search input { font-size: 11px; }
+.directory-search:focus-within { outline: 2px solid #6cb6e3; outline-offset: 2px; }
+.directory-sort { flex: 0 0 185px; min-width: 0; }
+.directory-sort > label:first-child { display: block; color: #466c94; font-size: 10px; margin-bottom: 6px; }
+.directory-sort .select-wrap { height: 44px; min-width: 0; width: 100%; }
+.directory-sort select { font-size: 10px; font-weight: 500; padding-left: 11px; }
+.directory-toolbar .directory-open-filters { display: none; }
+.directory-sort-help { font-size: 10px; color: #627e9c; margin-top: 10px; line-height: 1.5; }
+.directory-results-count { color: #587ba0; font-size: 11px; padding: 18px 0 14px; }
+.directory-people-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.directory-person-card { display: flex; flex-direction: column; position: relative; min-width: 0; padding: 19px 17px 15px; border: 1px solid #dfeaf3; border-radius: 12px; background: #fff; }
+.directory-person-card:hover { border-color: #a7cfe7; box-shadow: 0 3px 12px #1747670a; }
+.directory-person-card.selected { border-color: #64b8f2; background: #f5fbff; }
+.directory-person-top { display: flex; align-items: center; gap: 12px; min-height: 80px; padding-right: 12px; }
+.directory-person-top > div { min-width: 0; }
+.directory-person-top h3 { font-size: 14px; color: #07316b; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.directory-person-top p { color: #5277a0; font-size: 11px; line-height: 1.5; margin-top: 4px; overflow-wrap: anywhere; }
+.directory-person-place { margin: 15px 0 16px; padding-top: 12px; border-top: 1px solid #e7eff5; flex: 1; }
+.directory-person-place p { display: flex; align-items: flex-start; gap: 7px; color: #5478a0; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.directory-person-place p:first-child { font-weight: 500; color: #214e7b; margin-bottom: 4px; }
+.directory-person-place svg { flex: none; margin-top: 2px; color: #4983b4; }
+.directory-place-indent { margin-left: 22px; }
+.directory-person-card > .btn { width: 100%; min-height: 35px; font-size: 11px; border-radius: 8px; gap: 8px; }
+.directory-person-admin { position: absolute; top: 8px; right: 8px; }
+.directory-person-admin summary { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; color: #547aa1; cursor: pointer; list-style: none; }
+.directory-person-admin summary::-webkit-details-marker { display: none; }
+.directory-person-admin summary:hover { background: #edf7fc; }
+.directory-person-admin[open] { z-index: 3; }
+.directory-person-admin > div { position: absolute; top: 29px; right: 0; width: 130px; background: white; border: 1px solid #dce9f3; border-radius: 9px; padding: 4px; box-shadow: 0 5px 18px #17476718; }
+.directory-person-admin button { display: flex; align-items: center; gap: 8px; width: 100%; background: transparent; border: 0; border-radius: 6px; color: #254f7b; padding: 9px; font-size: 11px; }
+.directory-person-admin button:hover { background: #eef8fd; }
+.directory-person-admin button:last-child { color: #b83f52; }
+.directory-person-admin summary:focus-visible { outline: 3px solid #6cb6e3; outline-offset: 2px; }
+.directory-pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid #e7eff5; margin-top: 22px; padding-top: 16px; }
+.directory-pagination > div { display: flex; align-items: center; gap: 4px; }
+.directory-pagination > .btn { min-height: 34px; font-size: 10px; padding: 7px 11px; gap: 5px; }
+.directory-pagination > div button { min-width: 31px; height: 32px; padding: 0 5px; background: transparent; border: 1px solid transparent; border-radius: 8px; color: #4a6e96; font-size: 11px; }
+.directory-pagination > div button:hover { background: #edf7fc; }
+.directory-pagination > div button[aria-current="page"] { border-color: #a4d5f2; background: #e8f5fe; color: #07548d; font-weight: 600; }
+.directory-pagination > div span { color: #6686a0; font-size: 11px; }
+.directory-page button:disabled { opacity: .5; cursor: not-allowed; }
+.directory-empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 58px 16px; gap: 12px; }
+.directory-empty > span { width: 62px; height: 62px; border-radius: 50%; background: #edf7fc; color: #34729f; display: flex; align-items: center; justify-content: center; }
+.directory-empty h2 { font-size: 17px; color: #173e70; }
+.directory-empty p { color: #6381a2; font-size: 11px; line-height: 1.6; }
+.directory-empty > .btn { margin-top: 4px; font-size: 11px; }
+.directory-action-error { padding: 12px 16px; border: 1px solid #eed7df; border-radius: 10px; background: #fff8fa; color: #a73a53; font-size: 12px; }
+.directory-modal-backdrop { position: fixed; inset: 0; z-index: 100; background: #082b4a73; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.directory-modal { display: flex; flex-direction: column; width: min(680px, 100%); max-height: calc(100dvh - 48px); min-width: 0; background: white; border: 1px solid #e1edf6; border-radius: 18px; box-shadow: 0 16px 55px #082b4a30; color: #073168; overflow: hidden; }
+.directory-modal-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 25px; border-bottom: 1px solid #e5eef5; flex: none; }
+.directory-modal-heading h2 { font-size: 19px; line-height: 1.3; font-weight: 600; letter-spacing: -.025em; }
+.directory-modal-heading > button { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #4f7da5; flex: none; }
+.directory-modal-heading > button:hover { background: #edf7fc; }
+.directory-modal-body { overflow: auto; min-height: 0; padding: 20px 25px 10px; overscroll-behavior: contain; }
+.directory-modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 25px; border-top: 1px solid #e5eef5; flex: none; }
+.directory-modal-footer .btn { min-height: 36px; font-size: 11px; }
+.directory-profile-person { display: flex; align-items: center; gap: 20px; padding-bottom: 20px; min-width: 0; }
+.directory-profile-person > div { min-width: 0; }
+.directory-profile-person h3 { font-size: 21px; line-height: 1.35; font-weight: 600; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.directory-profile-person > div > p { color: #396b9c; font-size: 12px; margin-top: 5px; line-height: 1.5; }
+.directory-profile-hierarchy { display: flex; align-items: flex-start; gap: 6px; color: #6483a1; font-size: 10px; line-height: 1.6; margin-top: 10px; overflow-wrap: anywhere; }
+.directory-profile-hierarchy svg { flex: none; margin-top: 2px; }
+.directory-profile-hierarchy small { display: block; font-size: inherit; }
+.directory-profile-section { padding: 17px 0; border-top: 1px solid #e5eef5; }
+.directory-profile-section > h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.directory-profile-section > p { font-size: 11px; color: #56769b; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.directory-institutional-data { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.directory-institutional-data > div:last-child { grid-column: 1 / -1; }
+.directory-institutional-data dt { color: #56789b; font-size: 10px; margin-bottom: 5px; }
+.directory-institutional-data dd { margin: 0; padding: 10px 12px; background: #f0f7fb; border-radius: 7px; font-size: 11px; color: #315d8a; line-height: 1.5; overflow-wrap: anywhere; }
+.directory-profile-contact { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 12px; }
+.directory-profile-contact > div { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #dceaf5; border-radius: 9px; font-size: 11px; color: #3b6591; min-width: 0; }
+.directory-profile-contact svg { flex: none; color: #24639d; }
+.directory-profile-contact span { min-width: 0; overflow-wrap: anywhere; }
+.directory-profile-contact small { display: block; font-size: 9px; color: #6786a2; margin-bottom: 4px; }
+.directory-profile-contact a:hover { text-decoration: underline; }
+.directory-profile-newsletters { display: flex; flex-direction: column; gap: 9px; }
+.directory-profile-newsletters > a { display: flex; align-items: center; gap: 12px; padding: 9px; border: 1px solid #e1edf6; border-radius: 9px; min-width: 0; }
+.directory-profile-newsletters > a:hover { background: #f4fbff; border-color: #b5d7ed; }
+.directory-profile-newsletters img { width: 70px; height: 51px; object-fit: cover; border-radius: 6px; flex: none; }
+.directory-profile-newsletters > a > span:not(.chip) { flex: 1; min-width: 0; }
+.directory-profile-newsletters strong { display: block; font-size: 11px; line-height: 1.45; font-weight: 500; overflow-wrap: anywhere; }
+.directory-profile-newsletters small { display: block; margin-top: 4px; color: #6785a0; font-size: 9px; }
+.directory-profile-newsletters .chip { max-width: 110px; white-space: normal; font-size: 9px; text-align: center; padding: 5px 8px; }
+.directory-filter-drawer { justify-content: flex-start; padding: 0; }
+.directory-filter-drawer .directory-modal { width: min(340px, 100%); height: 100dvh; max-height: 100dvh; border-radius: 0 18px 18px 0; }
+.directory-filter-drawer .directory-filter-heading h2 { display: none; }
+.directory-filter-drawer .directory-filter-heading { justify-content: flex-end; margin-bottom: 10px; }
+.directory-filter-drawer .directory-filter-heading > button { font-size: 11px; }
+.directory-filter-drawer .directory-modal-footer .btn { width: 100%; }
+.directory-loading { width: min(100%, 1920px); margin: auto; padding: 24px 20px; }
+.directory-loading-message { padding: 0 0 18px; color: #426b95; font-size: 13px; }
+.directory-skeleton { background: #edf4f8; border-radius: 8px; }
+.directory-skeleton-heading { height: 100px; margin-bottom: 15px; }
+.directory-skeleton-sidebar { height: 420px; }
+.directory-skeleton-card { height: 237px; padding: 20px; background: #fff; border: 1px solid #e1edf6; border-radius: 12px; }
+.directory-skeleton-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 19px; }
+.directory-skeleton-line { width: 90%; height: 12px; margin-bottom: 11px; }
+.directory-skeleton-line:last-child { width: 65%; }
+@media (max-width: 1399px) {
+  .directory-people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .directory-layout { grid-template-columns: 260px minmax(0, 1fr); }
+  .directory-page-intro { gap: 20px; }
+  .directory-kpis { gap: 8px; }
+  .directory-kpis > div { padding: 10px; gap: 8px; }
+  .directory-kpis > div > span { width: 35px; height: 35px; }
+}
+@media (max-width: 1100px) {
+  .directory-page-intro { flex-direction: column; align-items: stretch; gap: 16px; }
+  .directory-summary { align-items: stretch; }
+  .directory-summary > .btn { align-self: flex-end; }
+  .directory-title-block p { max-width: none; }
+  .directory-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 980px) {
+  .directory-layout { grid-template-columns: minmax(0, 1fr); }
+  .directory-sidebar { display: none; }
+  .directory-toolbar .directory-open-filters { display: inline-flex; min-height: 44px; font-size: 11px; padding: 8px 12px; }
+  .directory-open-filters > span { background: #e5f4fd; color: #0c629c; border-radius: 50%; font-size: 10px; padding: 2px 6px; }
+  .directory-sort { flex-basis: 175px; }
+  .directory-skeleton-sidebar { display: none; }
+}
+@media (max-width: 650px) {
+  .directory-page { gap: 12px; }
+  .directory-page-intro { padding: 18px 15px; }
+  .directory-title-block h1 { font-size: 25px; }
+  .directory-title-block p { font-size: 11px; }
+  .directory-kpis { gap: 6px; }
+  .directory-kpis > div { flex-direction: column; align-items: flex-start; padding: 10px 8px; gap: 8px; }
+  .directory-kpis > div > span { width: 32px; height: 32px; }
+  .directory-kpis svg { width: 19px; }
+  .directory-kpis p { font-size: 9px; }
+  .directory-kpis strong { font-size: 22px; margin-top: 7px; }
+  .directory-listing { padding: 12px; }
+  .directory-toolbar { flex-wrap: wrap; gap: 10px; }
+  .directory-search { flex: 1 1 100%; }
+  .directory-search input { font-size: 10px; }
+  .directory-sort { flex: 1; }
+  .directory-toolbar .directory-open-filters { flex: none; }
+  .directory-people-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .directory-person-top { min-height: 68px; }
+  .directory-person-card { padding: 17px 15px 14px; }
+  .directory-results-count { font-size: 10px; }
+  .directory-pagination { gap: 4px; }
+  .directory-pagination > .btn span { display: none; }
+  .directory-pagination > .btn { padding: 5px; min-width: 28px; }
+  .directory-pagination > div { gap: 1px; }
+  .directory-pagination > div button { min-width: 24px; font-size: 10px; }
+  .directory-empty { padding: 35px 10px; }
+  .directory-empty h2 { font-size: 15px; }
+  .directory-modal-backdrop { padding: 10px; }
+  .directory-modal { max-height: calc(100dvh - 20px); border-radius: 14px; }
+  .directory-modal-heading { padding: 14px 16px; }
+  .directory-modal-heading h2 { font-size: 17px; }
+  .directory-modal-body { padding: 17px 16px 5px; }
+  .directory-modal-footer { padding: 12px 16px; }
+  .directory-modal-footer .btn { padding: 8px 12px; font-size: 10px; }
+  .directory-profile-person { align-items: flex-start; gap: 13px; }
+  .directory-profile-person .avatar { width: 64px !important; height: 64px !important; font-size: 19px !important; }
+  .directory-profile-person h3 { font-size: 17px; }
+  .directory-profile-person > div > p { font-size: 11px; }
+  .directory-institutional-data, .directory-profile-contact { grid-template-columns: minmax(0, 1fr); }
+  .directory-profile-newsletters > a { flex-wrap: wrap; gap: 8px; }
+  .directory-profile-newsletters img { width: 56px; height: 47px; }
+  .directory-profile-newsletters .chip { margin-left: 64px; }
+  .directory-filter-drawer { padding: 0; }
+  .directory-filter-drawer .directory-modal { border-radius: 0 14px 14px 0; }
+  .directory-loading { padding: 20px 10px; }
+}
