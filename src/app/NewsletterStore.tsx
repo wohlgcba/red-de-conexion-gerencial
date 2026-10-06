@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { LoginPage } from '../pages/LoginPage'
@@ -54,23 +54,52 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [mustChangePassword, setMustChangePassword] = useState(false)
+  const [sessionVersion, setSessionVersion] = useState(0)
+  const sessionOwner = useRef({ userId: null as string | null, version: 0 })
+  const loads = useRef({ sequence: 0, mounted: false })
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!supabase) return
     let active = true
+    let receivedAuthEvent = false
+    const lifecycle = loads.current
+    lifecycle.mounted = true
+    const acceptUser = (nextUser: User | null) => {
+      if (!active) return
+      const nextId = nextUser?.id ?? null
+      // SIGNED_IN también se emite al volver a una pestaña. Una renovación
+      // de la misma cuenta no debe desmontar las páginas ni recargar el catálogo.
+      if (sessionOwner.current.userId !== nextId) {
+        sessionOwner.current = { userId: nextId, version: sessionOwner.current.version + 1 }
+        setSessionVersion(sessionOwner.current.version)
+        setDataLoading(true)
+        setError('')
+        setPeople([]); setDirectorates([]); setItems([])
+        setCurrentPersonId(null); setIsAdmin(false); setMustChangePassword(false)
+      }
+      setUser(nextUser)
+      setAuthLoading(false)
+    }
     void supabase.auth.getUser().then(({ data }) => {
-      if (active) { setUser(data.user); setAuthLoading(false) }
-    })
+      // La comprobación inicial no puede reemplazar una sesión más reciente.
+      if (!receivedAuthEvent) acceptUser(data.user)
+    }).catch(() => { if (!receivedAuthEvent) acceptUser(null) })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) { setUser(session?.user ?? null); setDataLoading(true); setAuthLoading(false) }
+      receivedAuthEvent = true
+      acceptUser(session?.user ?? null)
     })
-    return () => { active = false; subscription.unsubscribe() }
+    return () => { active = false; lifecycle.mounted = false; lifecycle.sequence++; subscription.unsubscribe() }
   }, [])
 
   const refresh = useCallback(async () => {
-    if (!user) return
+    if (!userId || sessionOwner.current.userId !== userId || sessionOwner.current.version !== sessionVersion) return
+    const lifecycle = loads.current
+    const request = ++lifecycle.sequence
+    const isCurrent = () => lifecycle.mounted && sessionOwner.current.userId === userId && sessionOwner.current.version === sessionVersion && lifecycle.sequence === request
     try {
       const changeRequired = await withClockRetry(catalog.mustChangeInitialPassword)
+      if (!isCurrent()) return
       setMustChangePassword(changeRequired)
       if (changeRequired) {
         setError('')
@@ -79,6 +108,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         return
       }
       const access = await withClockRetry(catalog.getAccess)
+      if (!isCurrent()) return
       setError('')
       setCurrentPersonId(access.personId)
       setIsAdmin(access.isAdmin)
@@ -87,25 +117,27 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         return
       }
       const peopleResult = await catalog.getPeople()
+      if (!isCurrent()) return
       const [directoratesResult, newslettersResult] = await Promise.all([
         catalog.getDirectorates(peopleResult), catalog.getNewsletters(),
       ])
+      if (!isCurrent()) return
       const directoryNames = new Map(directoratesResult.map(item => [item.id, item.name]))
       setPeople(peopleResult.map(person => ({ ...person, directorate: person.directorateId ? directoryNames.get(person.directorateId) ?? person.directorate : person.directorate })))
       setDirectorates(directoratesResult)
       setItems(newslettersResult)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos.')
+      if (isCurrent()) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos.')
     } finally {
-      setDataLoading(false)
+      if (isCurrent()) setDataLoading(false)
     }
-  }, [user])
+  }, [userId, sessionVersion])
 
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
     const timer = window.setTimeout(() => void refresh(), 0)
     return () => window.clearTimeout(timer)
-  }, [user, refresh])
+  }, [userId, refresh])
 
   if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de Conexión Gerencial</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
   if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
