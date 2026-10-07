@@ -10,7 +10,7 @@ export function UserMenu({ id, name, role, organization, onClose, onSignOut, bus
     <div className="header-user-details" role="presentation"><strong>{name}</strong><span>{role}</span>{organization && <span>{organization}</span>}</div>
     <div className="header-menu-group" role="presentation">
       <Link role="menuitem" to="/mi-cuenta" onClick={onClose}><UserRound size={18} /> Mi cuenta</Link>
-      <Link role="menuitem" to="/mi-cuenta" onClick={onClose}><LockKeyhole size={18} /> Cambiar contraseña</Link>
+      <Link role="menuitem" to="/mi-cuenta/contrasena" onClick={onClose}><LockKeyhole size={18} /> Cambiar contraseña</Link>
     </div>
     <div className="header-menu-group" role="presentation">
       <button type="button" role="menuitem" className="header-logout" disabled={busy} onClick={onSignOut}><LogOut size={18} /> Cerrar sesión</button>
