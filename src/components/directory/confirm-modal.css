@@ -1,0 +1,24 @@
+.person-confirm-modal .directory-modal { width: min(540px, 100%); }
+.person-confirm-modal .directory-modal-heading h2 { display: flex; align-items: center; gap: 10px; font-size: 21.6px; }
+.person-confirm-modal .directory-modal-heading h2 svg { flex: none; color: #08618e; }
+.person-confirm-modal .directory-modal-body { padding-bottom: 22px; }
+.person-confirm-description { display: flex; flex-direction: column; gap: 16px; color: #50739a; font-size: 14.4px; line-height: 1.65; overflow-wrap: anywhere; }
+.person-confirm-description > p:last-child { color: #173d70; }
+.person-confirm-identity { padding: 13px 16px; background: #f0f8fc; border: 1px solid #deedf6; border-radius: 10px; }
+.person-confirm-identity strong { display: block; color: #073168; font-size: 16.8px; font-weight: 600; }
+.person-confirm-identity span { display: block; margin-top: 4px; }
+.person-confirm-warning { display: flex; align-items: flex-start; gap: 9px; padding: 12px 14px; background: #fff3f4; border: 1px solid #f3dce0; border-radius: 9px; color: #a73a4c; }
+.person-confirm-warning svg { flex: none; margin-top: 3px; }
+.person-confirm-danger .directory-modal-heading h2 > svg { color: #b43f4d; }
+.person-confirm-modal .person-confirm-danger-button { background: #b43f4d; border-color: #b43f4d; color: #fff; }
+.person-confirm-modal .person-confirm-danger-button:hover { background: #99303e; border-color: #99303e; }
+.person-confirm-modal button:disabled { opacity: .55; cursor: not-allowed; }
+.person-confirm-modal button:focus-visible { outline: 3px solid #78bfe8; outline-offset: 3px; }
+.person-confirm-error { margin-top: 16px; padding: 11px 14px; border: 1px solid #f3dce0; border-radius: 9px; background: #fff7f8; color: #a73a4c; font-size: 14.4px; line-height: 1.5; }
+.directory-person-toast { max-width: calc(100vw - 40px); z-index: 110; }
+@media (max-width: 650px) {
+  .person-confirm-modal .directory-modal-heading h2 { font-size: 19.2px; }
+  .person-confirm-modal .directory-modal-footer { flex-wrap: wrap; }
+  .person-confirm-modal .directory-modal-footer > .btn { flex: 1 1 160px; white-space: normal; }
+  .directory-person-toast { bottom: 12px; right: 12px; max-width: calc(100vw - 24px); }
+}

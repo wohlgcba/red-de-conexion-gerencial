@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Bell, ChevronDown } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useCatalog } from '../../app/useCatalog'
 import { getMockHeaderNotifications } from '../../mocks/headerNotifications'
 import { UserAvatar } from './UserAvatar'
 import { NotificationMenu, UserMenu } from './HeaderMenus'
-import { HeaderProfileDialog } from './HeaderProfileDialog'
 
 type Menu = 'notifications' | 'user'
 
@@ -17,7 +16,6 @@ export function HeaderUserArea() {
   const notificationButton = useRef<HTMLButtonElement>(null)
   const id = useId()
   const [menu, setMenu] = useState<{ type: Menu; routeKey: string } | null>(null)
-  const [profileRoute, setProfileRoute] = useState<string | null>(null)
   const [notifications, setNotifications] = useState(getMockHeaderNotifications)
   const [signingOut, setSigningOut] = useState(false)
   const [error, setError] = useState('')
@@ -27,11 +25,10 @@ export function HeaderUserArea() {
   const metadataName = metadataText('full_name') || metadataText('name') || [metadataText('given_name'), metadataText('family_name')].filter(Boolean).join(' ')
   const name = person?.name || metadataName || user.email || 'Mi cuenta'
   const role = person?.role || metadataText('position_title') || metadataText('job_role') || (isAdmin ? 'Administración de la Red' : 'Integrante de la Red')
+  const organization = person?.ministry || metadataText('ministry') || metadataText('organization')
   const image = metadataText('avatar_url') || metadataText('picture') || metadataText('photo_url')
   const photoUrl = /^https?:\/\//i.test(image) ? image : undefined
   const unreadCount = notifications.filter(item => !item.read).length
-  const closeProfile = useCallback(() => setProfileRoute(null), [])
-  const focusUser = useCallback(() => userButton.current?.focus(), [])
 
   useEffect(() => {
     if (!open) return
@@ -85,9 +82,8 @@ export function HeaderUserArea() {
         <ChevronDown size={15} strokeWidth={1.8} aria-hidden="true" />
       </button>
       {open === 'notifications' && <NotificationMenu id={`${id}-notifications`} notifications={notifications} onRead={markRead} onReadAll={() => markRead()} />}
-      {open === 'user' && <UserMenu id={`${id}-user`} name={name} role={role} onClose={() => setMenu(null)} onProfile={() => { setMenu(null); setProfileRoute(location.key) }} onSignOut={() => void logout()} busy={signingOut} />}
+      {open === 'user' && <UserMenu id={`${id}-user`} name={name} role={role} organization={organization} onClose={() => setMenu(null)} onSignOut={() => void logout()} busy={signingOut} />}
       {error && <p className="header-action-error" role="alert">{error}</p>}
     </div>
-    {profileRoute === location.key && <HeaderProfileDialog person={person} name={name} role={role} email={user.email} photoUrl={photoUrl} onClose={closeProfile} returnFocus={focusUser} />}
   </>
 }

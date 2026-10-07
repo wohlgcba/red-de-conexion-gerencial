@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import type { HeaderNotification } from '../../mocks/headerNotifications'
 import { HeaderDropdown } from './HeaderDropdown'
 
-export function UserMenu({ id, name, role, onProfile, onClose, onSignOut, busy }: {
-  id: string; name: string; role: string; onProfile: () => void; onClose: () => void; onSignOut: () => void; busy: boolean
+export function UserMenu({ id, name, role, organization, onClose, onSignOut, busy }: {
+  id: string; name: string; role: string; organization?: string; onClose: () => void; onSignOut: () => void; busy: boolean
 }) {
   return <HeaderDropdown id={id} label="Menú de usuario" menu>
-    <div className="header-user-details" role="presentation"><strong>{name}</strong><span>{role}</span></div>
+    <div className="header-user-details" role="presentation"><strong>{name}</strong><span>{role}</span>{organization && <span>{organization}</span>}</div>
     <div className="header-menu-group" role="presentation">
-      <button type="button" role="menuitem" onClick={onProfile}><UserRound size={18} /> Mi perfil</button>
+      <Link role="menuitem" to="/mi-cuenta" onClick={onClose}><UserRound size={18} /> Mi cuenta</Link>
       <Link role="menuitem" to="/mi-cuenta" onClick={onClose}><LockKeyhole size={18} /> Cambiar contraseña</Link>
     </div>
     <div className="header-menu-group" role="presentation">

@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Building2, ChevronLeft, ChevronRight, Landmark, Plus, Search, SlidersHorizontal, UsersRound } from 'lucide-react'
+import { Building2, Check, ChevronLeft, ChevronRight, Landmark, Plus, Search, SlidersHorizontal, TriangleAlert, UsersRound, X } from 'lucide-react'
 import { useCatalog } from '../app/useCatalog'
 import { Button, FilterSelect, Surface } from '../components/common/UI'
 import { DirectoryFilters } from '../components/directory/DirectoryFilters'
 import { DirectoryDialog } from '../components/directory/DirectoryDialog'
+import { ConfirmModal } from '../components/directory/ConfirmModal'
 import { DirectoryPersonCard } from '../components/directory/DirectoryPersonCard'
 import { DirectoryProfileModal } from '../components/directory/DirectoryProfileModal'
 import { PersonEditor } from '../components/directory/PersonEditor'
@@ -17,8 +18,12 @@ export function DirectoryPage() {
   const { people, items, directorates, isAdmin, savePerson, deletePerson } = useCatalog()
   const [params, setParams] = useSearchParams()
   const [editing, setEditing] = useState<Person | 'new' | null>(null)
-  const [actionError, setActionError] = useState('')
+  const [confirmation, setConfirmation] = useState<{ type: 'edit' | 'delete'; person: Person } | null>(null)
+  const [confirmationError, setConfirmationError] = useState('')
+  const [toast, setToast] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const deleting = useRef(false)
+  const searchInput = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<Filters>(EMPTY_DIRECTORY_FILTERS)
   const [sort, setSort] = useState<DirectorySort>('az')
@@ -37,15 +42,45 @@ export function DirectoryPage() {
   const closeProfile = useCallback(() => setParams(previous => { const next = new URLSearchParams(previous); next.delete('persona'); return next }, { replace: true }), [setParams])
   const closeFilters = useCallback(() => setFiltersOpen(false), [])
   const closeEditor = useCallback(() => setEditing(null), [])
+  const closeConfirmation = useCallback(() => {
+    if (deleting.current) return
+    setConfirmation(null)
+    setConfirmationError('')
+  }, [])
+  useEffect(() => {
+    if (!toast) return
+    searchInput.current?.focus()
+    const timer = window.setTimeout(() => setToast(''), 6000)
+    return () => window.clearTimeout(timer)
+  }, [toast])
   const clear = () => { setFilters(EMPTY_DIRECTORY_FILTERS); setQuery(''); setPage(1) }
   const changeFilter = (field: keyof Filters, value: string) => { setFilters(current => changeDirectoryFilter(people, current, field, value)); setPage(1) }
   const openProfile = (id: string) => setParams(previous => { const next = new URLSearchParams(previous); next.set('persona', id); return next })
-  const remove = async (person: Person) => {
-    if (!isAdmin || !window.confirm(`¿Eliminar el perfil de ${person.name}?`)) return
-    setActionError(''); setDeletingId(person.id)
-    try { await deletePerson(person.id); if (selected?.id === person.id) closeProfile() }
-    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'No se pudo eliminar el perfil.') }
-    finally { setDeletingId(null) }
+  const requestAction = (type: 'edit' | 'delete', person: Person) => {
+    if (!isAdmin || deleting.current) return
+    setConfirmationError('')
+    setConfirmation({ type, person })
+  }
+  const continueEditing = () => {
+    if (!isAdmin || confirmation?.type !== 'edit') return
+    const person = confirmation.person
+    closeConfirmation()
+    setEditing(person)
+  }
+  const remove = async () => {
+    if (!isAdmin || confirmation?.type !== 'delete' || deleting.current) return
+    const person = confirmation.person
+    deleting.current = true
+    setConfirmationError(''); setDeletingId(person.id); setToast('')
+    try {
+      await deletePerson(person.id)
+      if (selected?.id === person.id) closeProfile()
+      setConfirmation(null)
+      setToast('Integrante eliminado correctamente.')
+    } catch (cause) {
+      console.error('No se pudo eliminar al integrante del directorio.', cause)
+      setConfirmationError('No pudimos eliminar al integrante. Intentá nuevamente.')
+    } finally { deleting.current = false; setDeletingId(null) }
   }
 
   return <div className="directory-page">
@@ -56,19 +91,35 @@ export function DirectoryPage() {
         {isAdmin && <Button variant="yellow" onClick={() => setEditing('new')}><Plus size={17} /> Agregar integrante</Button>}
       </div>
     </Surface>
-    {actionError && <p className="directory-action-error" role="alert">{actionError}</p>}
     <div className="directory-layout">
       <aside className="surface directory-sidebar" aria-label="Filtros del directorio"><DirectoryFilters filters={filters} options={options} onChange={changeFilter} onClear={clear} /></aside>
       <Surface className="directory-listing">
-        <div className="directory-toolbar"><label className="search-input directory-search"><Search size={21} aria-hidden="true" /><input aria-label="Buscar integrantes" value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} placeholder="Buscar por nombre, cargo, ministerio o área..." /></label><div className="directory-sort"><label htmlFor="directory-sort">Ordenar por</label><FilterSelect id="directory-sort" value={sort} onChange={event => { setSort(event.target.value as DirectorySort); setPage(1) }} aria-describedby={sort === 'recent' ? 'directory-sort-help' : undefined}><option value="recent">Actividad más reciente</option><option value="az">Nombre A-Z</option><option value="za">Nombre Z-A</option></FilterSelect></div><Button className="directory-open-filters" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}><SlidersHorizontal size={17} /> Filtros{activeFilters > 0 && <span>{activeFilters}</span>}</Button></div>
+        <div className="directory-toolbar"><label className="search-input directory-search"><Search size={21} aria-hidden="true" /><input ref={searchInput} aria-label="Buscar integrantes" value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} placeholder="Buscar por nombre, cargo, ministerio o área..." /></label><div className="directory-sort"><label htmlFor="directory-sort">Ordenar por</label><FilterSelect id="directory-sort" value={sort} onChange={event => { setSort(event.target.value as DirectorySort); setPage(1) }} aria-describedby={sort === 'recent' ? 'directory-sort-help' : undefined}><option value="recent">Actividad más reciente</option><option value="az">Nombre A-Z</option><option value="za">Nombre Z-A</option></FilterSelect></div><Button className="directory-open-filters" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}><SlidersHorizontal size={17} /> Filtros{activeFilters > 0 && <span>{activeFilters}</span>}</Button></div>
         {sort === 'recent' && <p id="directory-sort-help" className="directory-sort-help">Según la publicación de newsletters. Sin publicaciones, se ordenan por nombre.</p>}
         <div className="directory-results-count" role="status" aria-live="polite">{filtered.length ? `Mostrando ${offset + 1}–${offset + visible.length} de ${filtered.length.toLocaleString('es-AR')} integrantes` : '0 integrantes'}</div>
-        {visible.length ? <div className="directory-people-grid">{visible.map(person => <DirectoryPersonCard key={person.id} person={person} selected={selected?.id === person.id} onSelect={() => openProfile(person.id)} onEdit={isAdmin ? () => { setActionError(''); setEditing(person) } : undefined} onDelete={isAdmin ? () => void remove(person) : undefined} busy={deletingId !== null} />)}</div> : <div className="directory-empty"><span><UsersRound size={30} /></span><h2>No encontramos integrantes con estos filtros.</h2><p>Probá con otra búsqueda o limpiá los filtros para ver a toda la Red.</p><Button onClick={clear}>Limpiar filtros</Button></div>}
+        {visible.length ? <div className="directory-people-grid">{visible.map(person => <DirectoryPersonCard key={person.id} person={person} selected={selected?.id === person.id} onSelect={() => openProfile(person.id)} onEdit={isAdmin ? () => requestAction('edit', person) : undefined} onDelete={isAdmin ? () => requestAction('delete', person) : undefined} busy={deletingId !== null} />)}</div> : <div className="directory-empty"><span><UsersRound size={30} /></span><h2>No encontramos integrantes con estos filtros.</h2><p>Probá con otra búsqueda o limpiá los filtros para ver a toda la Red.</p><Button onClick={clear}>Limpiar filtros</Button></div>}
         {filtered.length > DIRECTORY_PAGE_SIZE && <nav className="directory-pagination" aria-label="Paginación del directorio"><Button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} aria-label="Página anterior"><ChevronLeft size={17} /><span>Anterior</span></Button><div>{firstPage > 1 && <><button type="button" onClick={() => setPage(1)} aria-label="Página 1">1</button>{firstPage > 2 && <span>…</span>}</>}{pages.map(value => <button type="button" key={value} aria-label={`Página ${value}`} aria-current={value === currentPage ? 'page' : undefined} onClick={() => setPage(value)}>{value}</button>)}{pages[pages.length - 1] < pageCount && <>{pages[pages.length - 1] < pageCount - 1 && <span>…</span>}<button type="button" onClick={() => setPage(pageCount)} aria-label={`Página ${pageCount}`}>{pageCount}</button></>}</div><Button disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} aria-label="Página siguiente"><span>Siguiente</span><ChevronRight size={17} /></Button></nav>}
       </Surface>
     </div>
     {selected && <DirectoryProfileModal person={selected} onClose={closeProfile} />}
     {filtersOpen && <DirectoryDialog title="Filtros del directorio" className="directory-filter-drawer" onClose={closeFilters} footer={<Button variant="primary" onClick={closeFilters}>Ver {filtered.length} integrantes</Button>}><DirectoryFilters idPrefix="directory-mobile" filters={filters} options={options} onChange={changeFilter} onClear={clear} /></DirectoryDialog>}
     {editing && isAdmin && <PersonEditor key={editing === 'new' ? 'new' : editing.id} person={editing === 'new' ? undefined : editing} directorates={directorates} onSave={savePerson} onClose={closeEditor} />}
+    {confirmation && isAdmin && <ConfirmModal title={confirmation.type === 'edit' ? 'Editar datos del integrante' : 'Eliminar integrante'}
+      variant={confirmation.type === 'edit' ? 'info' : 'danger'}
+      confirmLabel={confirmation.type === 'edit' ? 'Continuar edición' : 'Eliminar integrante'}
+      busy={deletingId !== null} error={confirmationError} onClose={closeConfirmation}
+      onConfirm={confirmation.type === 'edit' ? continueEditing : () => void remove()}>
+      <p>{confirmation.type === 'edit' ? 'Estás por modificar la información de:' : 'Estás por eliminar a:'}</p>
+      <div className="person-confirm-identity"><strong>{confirmation.person.name}</strong><span>{confirmation.person.role || 'Cargo no informado'}</span></div>
+      {confirmation.type === 'edit' ? <>
+        <p>Los cambios que realices pueden afectar la información visible en el Directorio de la Red.</p>
+        <p>¿Querés continuar?</p>
+      </> : <>
+        <p>Esta acción eliminará al integrante del Directorio de la Red.</p>
+        <div className="person-confirm-warning"><TriangleAlert size={18} aria-hidden="true" /><span>Esta acción puede ser irreversible.</span></div>
+        <p>¿Estás seguro de que querés continuar?</p>
+      </>}
+    </ConfirmModal>}
+    {toast && <div className="toast directory-person-toast" role="status" aria-live="polite"><Check size={18} aria-hidden="true" /><span>{toast}</span><button type="button" aria-label="Cerrar mensaje" onClick={() => setToast('')}><X size={18} /></button></div>}
   </div>
 }
