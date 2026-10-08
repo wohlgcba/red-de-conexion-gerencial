@@ -48,6 +48,7 @@ export interface Newsletter {
   status: NewsletterStatus
   summary: string
   body: string[]
+  bodyHtml?: string | null
   quote?: string
   tags: string[]
   observation?: string
