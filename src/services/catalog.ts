@@ -3,7 +3,7 @@ import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types
 
 type PersonRow = { id: string; given_name: string; family_name: string; position_title: string; ministry: string; secretariat: string | null; directorate: string | null; directorate_id: string | null; phone: string; email: string; advisory_topics: string | null; bio: string; version: number }
 type DirectorateRow = { id: string; name: string; ministry: string; secretariat: string | null; summary: string; topics: string[]; version: number }
-type NewsletterRow = { id: string; author_id: string; title: string; subtitle: string; topic: string; summary: string; body: string; image_path: string | null; tags: string[]; reading_minutes: number; status: NewsletterStatus; featured: boolean; review_note: string | null; published_at: string | null; created_at: string; updated_at: string; version: number }
+type NewsletterRow = { id: string; author_id: string | null; author_user_id?: string | null; title: string; subtitle: string; topic: string; summary: string; body: string; image_path: string | null; tags: string[]; reading_minutes: number; status: NewsletterStatus; featured: boolean; review_note: string | null; published_at: string | null; created_at: string; updated_at: string; version: number }
 
 const db = () => requireSupabase().schema(SCHEMA)
 const check = (error: { message: string } | null) => { if (error) throw new Error(error.message) }
@@ -34,7 +34,7 @@ export async function getNewsletters(): Promise<Newsletter[]> {
       const signed = await client.storage.from(COVER_BUCKET).createSignedUrl(row.image_path, 3600)
       if (signed.data?.signedUrl) image = signed.data.signedUrl
     }
-    return { id: row.id, title: row.title, subtitle: row.subtitle, topic: row.topic, image, imagePath: row.image_path, authorId: row.author_id, date: (row.published_at ?? row.created_at).slice(0, 10), updatedAt: row.updated_at.slice(0, 10), readingMinutes: row.reading_minutes, featured: row.featured, status: row.status, summary: row.summary, body: row.body.split(/\n\s*\n/).filter(Boolean), tags: row.tags, observation: row.review_note ?? undefined, version: row.version }
+    return { id: row.id, title: row.title, subtitle: row.subtitle, topic: row.topic, image, imagePath: row.image_path, authorId: row.author_id ?? '', authorUserId: row.author_user_id, date: (row.published_at ?? row.created_at).slice(0, 10), updatedAt: row.updated_at.slice(0, 10), readingMinutes: row.reading_minutes, featured: row.featured, status: row.status, summary: row.summary, body: row.body.split(/\n\s*\n/).filter(Boolean), tags: row.tags, observation: row.review_note ?? undefined, version: row.version }
   }))
 }
 
@@ -109,7 +109,7 @@ export async function saveNewsletter(item: Newsletter): Promise<string> {
     if (!data?.length) throw new Error('El newsletter cambió desde que lo abriste. Actualizá la página.')
     return item.id
   } else {
-    const { data, error } = await db().from('newsletters').insert({ ...values, author_id: item.authorId }).select('id').single()
+    const { data, error } = await db().from('newsletters').insert({ ...values, author_id: item.authorId || null }).select('id').single()
     check(error)
     if (!data?.id) throw new Error('No se pudo crear el newsletter.')
     return String(data.id)

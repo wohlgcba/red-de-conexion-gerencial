@@ -39,6 +39,7 @@ export interface Newsletter {
   topic: string
   image: string
   authorId: string
+  authorUserId?: string | null
   date: string
   updatedAt: string
   readingMinutes: number
