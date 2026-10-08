@@ -5,6 +5,7 @@ import { LoginPage } from '../pages/LoginPage'
 import { PasswordChangeForm } from '../components/common/PasswordChangeForm'
 import { requireSupabase, supabase } from '../lib/supabase'
 import * as catalog from '../services/catalog'
+import * as profilePhotos from '../services/profilePhotos'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 import { DirectoryLoading } from '../components/directory/DirectoryLoading'
@@ -28,6 +29,8 @@ export type Store = {
   items: Newsletter[]
   currentPersonId: string | null
   isAdmin: boolean
+  currentPhotoUrl?: string
+  saveProfilePhoto: (file: File) => Promise<void>
   refresh: () => Promise<void>
   signOut: () => Promise<void>
   savePerson: (person: Parameters<typeof catalog.savePerson>[0]) => Promise<void>
@@ -53,6 +56,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Newsletter[]>([])
   const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | undefined>()
   const [mustChangePassword, setMustChangePassword] = useState(false)
   const [sessionVersion, setSessionVersion] = useState(0)
   const sessionOwner = useRef({ userId: null as string | null, version: 0 })
@@ -77,6 +81,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setError('')
         setPeople([]); setDirectorates([]); setItems([])
         setCurrentPersonId(null); setIsAdmin(false); setMustChangePassword(false)
+        setCurrentPhotoUrl(undefined)
       }
       setUser(nextUser)
       setAuthLoading(false)
@@ -116,14 +121,16 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setPeople([]); setDirectorates([]); setItems([])
         return
       }
-      const peopleResult = await catalog.getPeople()
+      const [peopleResult, photos] = await Promise.all([catalog.getPeople(), profilePhotos.getProfilePhotos()])
       if (!isCurrent()) return
       const [directoratesResult, newslettersResult] = await Promise.all([
         catalog.getDirectorates(peopleResult), catalog.getNewsletters(),
       ])
       if (!isCurrent()) return
       const directoryNames = new Map(directoratesResult.map(item => [item.id, item.name]))
-      setPeople(peopleResult.map(person => ({ ...person, directorate: person.directorateId ? directoryNames.get(person.directorateId) ?? person.directorate : person.directorate })))
+      const photoByPerson = new Map(photos.filter(photo => photo.person_id).map(photo => [photo.person_id, photo.url]))
+      setPeople(peopleResult.map(person => ({ ...person, photoUrl: photoByPerson.get(person.id), directorate: person.directorateId ? directoryNames.get(person.directorateId) ?? person.directorate : person.directorate })))
+      setCurrentPhotoUrl(photos.find(photo => photo.user_id === userId)?.url)
       setDirectorates(directoratesResult)
       setItems(newslettersResult)
     } catch (cause) {
@@ -148,7 +155,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
 
   const value: Store = {
-    user, people, directorates, items, currentPersonId, isAdmin, refresh,
+    user, people, directorates, items, currentPersonId, isAdmin, refresh, currentPhotoUrl,
+    saveProfilePhoto: async file => { await profilePhotos.saveProfilePhoto(file, user.id); await refresh() },
     signOut: async () => { const { error: signOutError } = await requireSupabase().auth.signOut(); if (signOutError) throw signOutError },
     savePerson: async person => { await catalog.savePerson(person); await refresh() },
     deletePerson: async id => { await catalog.deletePerson(id); await refresh() },

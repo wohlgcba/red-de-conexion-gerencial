@@ -1,0 +1,15 @@
+.image-crop-dialog { z-index: 150; }
+.image-crop-dialog .directory-modal { width: min(760px, 100%); }
+.image-crop-dialog .directory-modal-heading h2 { display: flex; align-items: center; gap: 10px; }
+.image-crop-help { color: #53789d; font-size: 14.4px; line-height: 1.6; margin-bottom: 14px; }
+.image-crop-stage { height: min(44vh, 360px); min-height: 190px; position: relative; overflow: hidden; border-radius: 12px; background: #133951; }
+.image-crop-stage .reactEasyCrop_CropArea { border-color: #fff; }
+.image-crop-stage .reactEasyCrop_Container:focus-visible { outline: 3px solid #80c9ef; outline-offset: -3px; }
+.image-crop-controls { padding: 18px 0 14px; }
+.image-crop-controls > label { display: flex; justify-content: space-between; font-size: 14.4px; color: #315d83; margin-bottom: 8px; }
+.image-crop-controls > label strong { color: #07527e; font-weight: 600; }
+.image-crop-controls > div { display: flex; align-items: center; gap: 12px; color: #417da5; }
+.image-crop-controls input { min-width: 0; flex: 1; accent-color: #087ca5; cursor: pointer; }
+.image-crop-controls input:focus-visible { outline: 2px solid #68b4df; outline-offset: 4px; border-radius: 6px; }
+.image-crop-controls .btn { min-height: 34px; font-size: 12px; }
+@media(max-width:650px) { .image-crop-dialog { padding: 12px; } .image-crop-dialog .directory-modal-body { padding: 14px; } .image-crop-controls > div { flex-wrap: wrap; } .image-crop-controls input { flex-basis: 60%; } .image-crop-controls .btn { margin-left: auto; } .image-crop-stage { min-height: 180px; } }

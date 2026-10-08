@@ -5,7 +5,7 @@ export function getNewsletterAuthor(item: Pick<Newsletter, 'authorId'>, people: 
   return people.find(person => person.id === item.authorId) ?? {
     id: '', name: item.authorId ? 'Autor no disponible' : 'Administración de la Red',
     role: item.authorId ? '' : 'Equipo administrador', ministry: 'Red de Conexión Gerencial',
-    email: '', avatar: 0,
+    email: '', avatar: 0, photoUrl: undefined as string | undefined,
   }
 }
 

@@ -9,7 +9,7 @@ import { NotificationMenu, UserMenu } from './HeaderMenus'
 type Menu = 'notifications' | 'user'
 
 export function HeaderUserArea() {
-  const { user, people, currentPersonId, isAdmin, signOut } = useCatalog()
+  const { user, people, currentPersonId, isAdmin, signOut, currentPhotoUrl } = useCatalog()
   const location = useLocation()
   const root = useRef<HTMLDivElement>(null)
   const userButton = useRef<HTMLButtonElement>(null)
@@ -27,7 +27,7 @@ export function HeaderUserArea() {
   const role = person?.role || metadataText('position_title') || metadataText('job_role') || (isAdmin ? 'Administración de la Red' : 'Integrante de la Red')
   const organization = person?.ministry || metadataText('ministry') || metadataText('organization')
   const image = metadataText('avatar_url') || metadataText('picture') || metadataText('photo_url')
-  const photoUrl = /^https?:\/\//i.test(image) ? image : undefined
+  const photoUrl = currentPhotoUrl || person?.photoUrl || (/^https?:\/\//i.test(image) ? image : undefined)
   const unreadCount = notifications.filter(item => !item.read).length
 
   useEffect(() => {

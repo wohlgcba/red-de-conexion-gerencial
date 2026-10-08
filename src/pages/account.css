@@ -28,5 +28,8 @@
 .account-access-card > p { margin-bottom: 17px; font-size: 14.4px; color: #56769b; line-height: 1.6; }
 .account-access-card > .btn { width: 100%; white-space: normal; }
 .account-password-back { width: 100%; margin-top: 18px; }
+.profile-photo-upload { margin: -6px 0 20px; }
+.profile-photo-upload .btn { font-size: 13.2px; }
+.photo-upload-notice { font-size: 13.2px; color: #087057; margin-top: 10px; line-height: 1.5; }
 @media (max-width: 900px) { .account-overview-columns { grid-template-columns: minmax(0, 1fr); } .account-access-aside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 650px) { .account-intro, .account-profile-card { padding: 18px 16px; } .account-intro .page-heading { flex-direction: column; } .account-intro .page-actions { align-self: stretch; justify-content: flex-start; } .account-identity { gap: 14px; align-items: flex-start; } .account-identity .header-avatar, .account-identity .header-avatar-photo { width: 66px !important; height: 66px !important; font-size: 22px !important; } .account-identity h2 { font-size: 21.6px; } .account-identity p { font-size: 14.4px; } .account-profile-fields, .account-access-aside { grid-template-columns: minmax(0, 1fr); } .account-profile-card > .btn { width: 100%; white-space: normal; } }

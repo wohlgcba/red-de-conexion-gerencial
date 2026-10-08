@@ -15,6 +15,7 @@ export interface Person {
   advisoryTopicsRaw: string
   bio: string
   avatar: number
+  photoUrl?: string
   newsletterIds: string[]
   directorateId?: string | null
   version?: number

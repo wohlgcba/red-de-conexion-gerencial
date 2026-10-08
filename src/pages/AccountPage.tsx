@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useCatalog } from '../app/useCatalog'
 import { Chip, PageHeading, Surface } from '../components/common/UI'
 import { UserAvatar } from '../components/layout/UserAvatar'
+import { ProfilePhotoUpload } from '../components/common/ProfilePhotoUpload'
 import './account.css'
 
 export function AccountPage() {
-  const { user, people, currentPersonId, isAdmin } = useCatalog()
+  const { user, people, currentPersonId, isAdmin, currentPhotoUrl } = useCatalog()
   const person = people.find(item => item.id === currentPersonId)
   const metadataText = (key: string) => typeof user.user_metadata[key] === 'string' ? user.user_metadata[key].trim() : ''
   const metadataName = metadataText('full_name') || metadataText('name') || [metadataText('given_name'), metadataText('family_name')].filter(Boolean).join(' ')
@@ -14,7 +15,7 @@ export function AccountPage() {
   const role = person?.role || metadataText('position_title') || metadataText('job_role') || (isAdmin ? 'Administración de la Red' : 'Integrante de la Red')
   const organization = person?.ministry || metadataText('ministry') || metadataText('organization')
   const image = metadataText('avatar_url') || metadataText('picture') || metadataText('photo_url')
-  const photoUrl = /^https?:\/\//i.test(image) ? image : undefined
+  const photoUrl = currentPhotoUrl || person?.photoUrl || (/^https?:\/\//i.test(image) ? image : undefined)
   const fields = [
     ['Nombre y apellido', person?.name || metadataName],
     ['Cargo', role],
@@ -32,6 +33,7 @@ export function AccountPage() {
       <Surface className="account-profile-card">
         <div className="panel-heading"><h2>Mi perfil</h2></div>
         <div className="account-identity"><UserAvatar key={photoUrl} name={name} photoUrl={photoUrl} /><div><h2>{name}</h2><p>{role}</p>{organization && <span><Building2 size={17} aria-hidden="true" /> {organization}</span>}</div></div>
+        <ProfilePhotoUpload />
         {!person && <p className="account-profile-note">Tu cuenta todavía no tiene un perfil vinculado en el Directorio. Se muestran los datos disponibles de tu sesión.</p>}
         <section className="account-profile-section"><h3>Datos institucionales</h3><dl className="account-profile-fields">{fields.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || 'No informado'}</dd></div>)}</dl></section>
         {person && <>
