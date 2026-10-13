@@ -6,7 +6,7 @@ import './header.css'
 
 const links = [
   ['/directorio', 'Directorio'],
-  ['/direcciones-generales', 'Direcciones Generales'],
+  ['/organigrama', 'Organigrama'],
   ['/newsletters', 'Newsletters'],
 ]
 

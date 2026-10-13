@@ -1,0 +1,164 @@
+.organization-page { min-width: 0; }
+.organization-intro { padding: 20px; }
+.organization-intro .page-heading { align-items: center; gap: 22px; margin-bottom: 16px; }
+.organization-intro .page-heading > div:first-child { flex: 1; min-width: 0; }
+.organization-intro .page-heading h1 { font-size: 2rem; }
+.organization-intro .page-heading p { font-size: .85rem; line-height: 1.55; margin-top: 4px; }
+.organization-statistics { display: flex; gap: 12px; }
+.organization-stat { display: flex; align-items: center; gap: 12px; border: 1px solid #dcecf7; border-radius: 12px; padding: 12px; min-width: 190px; }
+.organization-stat > span { display: grid; place-items: center; color: #0074b8; background: #eaf7fe; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; }
+.organization-stat small { display: block; color: #6384ab; font-size: .7rem; }
+.organization-stat strong { display: block; font-size: 1.5rem; line-height: 1.25; }
+.organization-controls { display: flex; align-items: end; gap: 12px; padding-top: 14px; border-top: 1px solid #e4eff8; }
+.organization-controls .search-input { flex: 1; min-width: 180px; }
+.organization-controls .btn { min-height: 42px; white-space: nowrap; font-size: .8rem; }
+.organization-root-filter { width: 240px; flex-shrink: 0; }
+.organization-root-filter > label { display: block; color: #6384ab; font-size: .72rem; margin: -9px 8px 3px; }
+.organization-detail-content { animation: organization-reveal 200ms ease-out; }
+.organization-detail-content h2 { font-size: 1.18rem; line-height: 1.4; overflow-wrap: anywhere; margin: 0 0 6px; }
+.organization-breadcrumb { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 13px; }
+.organization-breadcrumb span { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.organization-breadcrumb button { border: 0; background: none; color: #6185af; text-align: left; font: inherit; font-size: .72rem; padding: 0; overflow-wrap: anywhere; }
+.organization-breadcrumb button:hover { color: #006db0; text-decoration: underline; }
+.organization-institutional-data { background: #f5fbff; border: 1px solid #dceef9; border-radius: 10px; margin: 0 0 14px; padding: 12px; }
+.organization-institutional-data > div { display: grid; grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; gap: 9px; margin: 0 0 9px; font-size: .76rem; }
+.organization-institutional-data > div:last-child { margin-bottom: 0; }
+.organization-institutional-data svg { color: #0579b0; }
+.organization-institutional-data dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.organization-responsibilities h3 { font-size: 1rem; margin: 0; }
+.organization-section-help { color: #6a85a8; font-size: .73rem; line-height: 1.5; margin: 5px 0 11px; }
+.organization-responsible-group { margin-bottom: 8px; }
+.organization-responsible-card { padding: 10px; display: flex; align-items: start; gap: 10px; border: 1px solid #dcecf7; border-radius: 10px; margin-bottom: 7px; }
+.organization-responsible-info { min-width: 0; flex: 1; }
+.organization-responsible-info > div:first-child { display: flex; gap: 5px; flex-wrap: wrap; justify-content: space-between; }
+.organization-responsible-info strong { font-size: .8rem; }
+.organization-responsible-info p { font-size: .73rem; color: #6182a8; margin: 3px 0; }
+.organization-responsible-origin { display: block; color: #6182a8; font-size: .66rem; line-height: 1.5; }
+.organization-badge { display: inline-flex; gap: 4px; align-items: center; font-size: .63rem; padding: 4px 9px; border-radius: 20px; line-height: 1.35; }
+.organization-badge i { width: 6px; height: 6px; border-radius: 50%; background: #00a581; }
+.membership-member { color: #006c55; background: #dff9ef; }
+.membership-non_member, .membership-unidentified { color: #4d6985; background: #edf2f6; }
+.membership-pending { color: #8f6500; background: #fff5d7; }
+.organization-contact-row { display: flex; align-items: end; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.organization-contact-row > span { flex: 1; min-width: 0; }
+.organization-contact-row a { display: flex; gap: 6px; align-items: center; color: #4a76a5; font-size: .7rem; overflow-wrap: anywhere; margin-top: 3px; }
+.organization-contact-row svg { flex-shrink: 0; }
+.organization-contact-row .btn { padding: 6px 9px; font-size: .72rem; min-height: 30px; }
+.organization-no-profile { display: inline-flex; align-items: start; gap: 5px; color: #7087a5; font-size: .69rem; margin-top: 6px; }
+.organization-no-profile svg { flex-shrink: 0; margin-top: 2px; }
+.organization-references { border: 1px solid #dcecf7; border-radius: 10px; padding: 11px; margin-top: 14px; }
+.organization-references h3 { margin: 0 0 8px; font-size: .75rem; }
+.organization-references > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.organization-references small { display: block; font-size: .65rem; color: #6486a8; margin-top: 4px; max-width: 150px; }
+.organization-references p { font-size: .66rem; color: #6486a8; margin: 8px 0 0; }
+.organization-demo-notice, .organization-expansion-notice, .organization-footnote { margin: 0; font-size: .72rem; line-height: 1.5; color: #4a79a2; padding: 9px 13px; border: 1px solid #d3e9f8; background: #edf8ff; border-radius: 10px; }
+.organization-search-results { margin-top: 12px; border: 1px solid #dcecf7; border-radius: 12px; padding: 10px; max-height: 360px; overflow-y: auto; }
+.organization-search-results p { font-size: .8rem; margin: 0 0 8px; color: #5d7e9f; }
+.organization-search-results > button:not(.btn) { width: 100%; display: flex; gap: 10px; text-align: left; border: 0; border-bottom: 1px solid #e8f0f7; background: white; color: #063765; padding: 10px 6px; font: inherit; }
+.organization-search-results > button:hover { background: #edf8ff; }
+.organization-search-results strong { display: block; font-size: .82rem; }
+.organization-search-results small { display: block; font-size: .7rem; color: #6384a9; }
+.organization-empty, .organization-loading { padding: 28px; }
+.organization-loading > div { height: 42px; margin: 12px 0; background: #edf6fb; border-radius: 10px; }
+.organization-page button:focus-visible { outline: 2px solid #0075bb; outline-offset: 3px; }
+@keyframes organization-reveal { from { opacity: .4; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes organization-collapse { to { opacity: 0; transform: translateY(-3px); } }
+@media (max-width: 1500px) { .organization-intro .page-heading { flex-wrap: wrap; } .organization-controls { flex-wrap: wrap; } .organization-stat { min-width: 175px; } .organization-type-chip { display: none; } }
+@media (max-width: 1100px) { .organization-workspace { grid-template-columns: minmax(0, 1fr); } .organization-detail { display: none; } .organization-controls .search-input { flex-basis: 100%; } .organization-root-filter { flex: 1; min-width: 200px; } }
+@media (max-width: 600px) { .organization-intro, .organization-explorer { padding: 12px; } .organization-intro .page-heading h1 { font-size: 1.65rem; } .organization-statistics { gap: 6px; width: 100%; } .organization-intro .page-actions { width: 100%; } .organization-stat { min-width: 0; flex: 1; padding: 8px; gap: 6px; align-items: start; } .organization-stat > span { display: none; } .organization-stat small { font-size: .63rem; } .organization-stat strong { font-size: 1.2rem; } .organization-controls { gap: 8px; } .organization-root-filter { flex-basis: 100%; } .organization-controls .btn { flex: 1; white-space: normal; padding: 8px 6px; font-size: .72rem; } .organization-tree-row { margin-left: calc(min(var(--organization-depth), 5) * 10px); padding: 5px; } .organization-tree-row:not(.depth-0)::before { left: -6px; width: 5px; } .organization-node-main { flex-wrap: wrap; gap: 4px; } .organization-node-select { font-size: .78rem; gap: 5px; flex-basis: calc(100% - 34px); } .organization-node-toggle { order: 2; } .organization-count-chip { order: 3; margin-left: 32px; font-size: .62rem; } .organization-unit-icon { width: 28px; height: 28px; } .organization-node-person, .organization-node-unidentified { margin-left: 32px; } .organization-institutional-data > div { grid-template-columns: 17px minmax(0, 1fr); } .organization-institutional-data dd { grid-column: 2; } .organization-drawer { padding: 8px; } }
+@media (prefers-reduced-motion: reduce) { .organization-page *, .organization-detail-content { animation: none !important; transition: none !important; } }
+
+/* Graphic organization explorer. Scoped to this section and its own modal. */
+.organization-graph-surface { min-width: 0; overflow: hidden; padding: 0; }
+.organization-graph-heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; padding: 16px 20px 8px; border-bottom: 1px solid #e5eff6; }
+.organization-graph-heading > div { min-width: 0; flex: 1; }
+.organization-graph-heading .btn { font-size: .8rem; }
+.organization-overview-title { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #073665; margin-bottom: 10px; }
+.organization-overview-title > svg { color: #0676b2; }
+.organization-overview-title > strong { font-size: .95rem; }
+.organization-overview-title > span { font-size: .76rem; color: #6a85a6; }
+.organization-graph-heading .organization-breadcrumb { margin: 9px 0 5px; }
+.organization-breadcrumb > button { display: inline-flex; gap: 6px; align-items: center; }
+.organization-legend { font-size: .73rem; color: #52769b; position: relative; flex-shrink: 0; padding-top: 6px; }
+.organization-legend summary { cursor: pointer; padding: 3px 0; font-weight: 500; }
+.organization-legend ul { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 15px; list-style: none; padding: 10px 0 5px; margin: 0; }
+.organization-legend li { display: flex; align-items: center; gap: 7px; line-height: 1.4; font-size: .67rem; }
+.organization-legend i { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; background: var(--unit-color); }
+.tone-government { --unit-color: #bf353b; --unit-text: #fff; }
+.tone-ministry { --unit-color: #ffb331; --unit-text: #173958; }
+.tone-secretariat { --unit-color: #f5d448; --unit-text: #203c51; }
+.tone-subsecretariat { --unit-color: #549ad4; --unit-text: #082d50; }
+.tone-directorate { --unit-color: #64b08c; --unit-text: #113f35; }
+.tone-management { --unit-color: #bee8dc; --unit-text: #154c49; }
+.tone-submanagement { --unit-color: #cbecee; --unit-text: #15484e; }
+.tone-special { --unit-color: #e0e7ee; --unit-text: #183750; }
+.organization-canvas { width: 100%; height: clamp(580px, 74vh, 850px); position: relative; min-width: 0; background: #fcfeff; }
+.organization-canvas .react-flow__node { border: 0; border-radius: 12px; }
+.organization-canvas .react-flow__handle { width: 3px; height: 3px; background: transparent; border: 0; pointer-events: none; opacity: 0; }
+.organization-canvas .react-flow__edge-path { animation: organization-edge-reveal 210ms ease-out; }
+.organization-canvas .react-flow__minimap { border: 1px solid #d7e7f1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px #133d5c0c; width: 140px; height: 90px; bottom: 28px; }
+.organization-canvas .react-flow__attribution { font-size: 10px; background: #ffffffba; }
+.organization-graph-card { width: 100%; height: 234px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #d9e7f1; border-radius: 11px; background: #f8fcff; box-shadow: 0 2px 7px #0d3d6010; animation: organization-card-reveal 210ms ease-out; transition: box-shadow 180ms, border-color 180ms; }
+.organization-graph-card.on-path { border-color: #88b9d6; }
+.organization-graph-card.selected { border: 2px solid #1594d3; box-shadow: 0 0 0 3px #d8f0fe; }
+.organization-card-top { display: flex; align-items: stretch; min-height: 77px; background: var(--unit-color); color: var(--unit-text); flex-shrink: 0; }
+.organization-card-activate { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; text-align: left; padding: 10px 10px 10px 13px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600; line-height: 1.3; cursor: pointer; }
+.organization-card-activate svg { flex-shrink: 0; }
+.organization-card-activate > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.organization-card-activate:hover, .organization-card-expand:hover { background: #ffffff26; }
+.organization-card-expand { display: grid; place-items: center; width: 35px; flex-shrink: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.organization-card-code { text-align: center; color: #fff; font-size: 12px; line-height: 1.4; font-weight: 500; padding: 3px 10px; background: #526478; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.organization-card-responsible { display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: #355a7b; border: 0; padding: 10px 9px 7px; min-height: 78px; flex: 1; width: 100%; cursor: pointer; text-align: center; font: inherit; }
+.organization-card-responsible > span { min-width: 0; }
+.organization-card-responsible strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; font-size: 14px; line-height: 1.4; margin-bottom: 5px; }
+.organization-card-responsible small { display: block; font-size: 11px; color: #728aa0; }
+.organization-graph-card:focus-within { box-shadow: 0 0 0 3px #a0d6f5; }
+.organization-card-responsible .organization-badge { font-size: 12px; padding: 3px 7px; max-width: 100%; line-height: 1.25; }
+.organization-card-responsible:hover { background: #ecf7fe; }
+.organization-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 7px; padding: 5px 10px; border-top: 1px solid #e1edf5; font-size: 12px; color: #526e85; }
+.organization-card-bottom > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.organization-card-bottom button, .organization-card-children button { display: inline-flex; align-items: center; gap: 4px; border: 0; padding: 2px; background: transparent; color: #0a639b; font: inherit; font-size: 11px; flex-shrink: 0; cursor: pointer; }
+.organization-card-children { display: flex; justify-content: space-between; align-items: center; padding: 3px 10px 6px; color: #526e85; font-size: 12px; }
+.organization-zoom-controls { position: absolute; display: flex; gap: 7px; top: 14px; right: 16px; z-index: 5; }
+.organization-zoom-controls > div { display: flex; align-items: center; border: 1px solid #d5e6f3; border-radius: 9px; background: white; box-shadow: 0 2px 5px #0737550a; height: 38px; }
+.organization-zoom-controls button { display: grid; place-items: center; width: 36px; height: 36px; color: #074673; border: 0; background: white; border-radius: 8px; cursor: pointer; }
+.organization-zoom-controls output { min-width: 44px; font-size: 13px; color: #385c7e; text-align: center; }
+.organization-zoom-controls .btn { border: 1px solid #d5e6f3; padding: 8px; min-height: 38px; height: 38px; }
+.organization-zoom-controls button:hover { background: #edf8ff; }
+.organization-zoom-controls button:disabled { opacity: .4; cursor: default; }
+.organization-pan-help { position: absolute; left: 16px; bottom: 12px; color: #627f9c; background: #fffffff2; border: 1px solid #e1ecf4; border-radius: 7px; padding: 5px 9px; font-size: 12px; pointer-events: none; display: flex; align-items: center; gap: 6px; margin: 0; }
+.organization-graph-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 7px; border-top: 1px solid #e1ecf4; color: #64829d; padding: 10px 18px; font-size: .72rem; }
+.organization-node-leaving { opacity: 0; transition: opacity 180ms; pointer-events: none !important; }
+.organization-detail-modal .directory-modal { width: min(740px, calc(100vw - 32px)); max-height: min(900px, 92dvh); }
+.organization-detail-modal .directory-modal-heading h2 { display: flex; gap: 12px; align-items: center; }
+.organization-detail-modal .directory-modal-heading h2 svg { color: #0679bb; background: #eaf7ff; width: 43px; height: 43px; padding: 10px; border-radius: 50%; }
+.organization-detail-modal .organization-detail-content h2 { font-size: 1.22rem; margin: 0 0 10px; }
+.organization-detail-modal .organization-breadcrumb button { font-size: .75rem; }
+.organization-detail-modal .organization-institutional-data { padding: 16px; }
+.organization-detail-modal .organization-institutional-data > div { font-size: .8rem; margin-bottom: 12px; }
+.organization-detail-modal .organization-badge { font-size: .7rem; }
+.organization-detail-modal .organization-responsible-info strong { font-size: .85rem; }
+.organization-detail-modal .organization-contact-row .btn { font-size: .73rem; }
+.organization-detail-modal .directory-modal-footer { display: flex; justify-content: flex-end; }
+.organization-detail-modal button:focus-visible { outline: 2px solid #0075bb; outline-offset: 3px; }
+.organization-mobile-explorer { list-style: none; margin: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+.organization-mobile-level { display: block; color: #6183a3; font-size: .68rem; line-height: 1.5; margin: 0 0 5px; overflow-wrap: anywhere; }
+.organization-mobile-explorer .organization-graph-card { height: auto; min-height: 220px; animation: organization-card-reveal 210ms ease-out; }
+.organization-mobile-explorer .organization-card-top { min-height: 65px; }
+.organization-mobile-explorer .organization-card-activate > span { display: block; overflow: visible; }
+@keyframes organization-card-reveal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes organization-edge-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 1100px) { .organization-graph-heading { padding: 13px; } .organization-legend ul { grid-template-columns: 1fr; } .organization-zoom-controls { gap: 5px; right: 10px; } }
+@media (max-width: 700px) {
+ .organization-graph-heading { flex-wrap: wrap; gap: 4px; }
+ .organization-graph-heading > div { flex-basis: 100%; }
+ .organization-legend { width: 100%; }
+ .organization-legend ul { grid-template-columns: 1fr 1fr; }
+ .directory-modal-backdrop.organization-detail-modal { padding: 0; }
+ .organization-detail-modal .directory-modal { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+ .organization-detail-modal .directory-modal-body { overflow-y: auto; }
+ .organization-graph-caption { padding: 10px 13px; }
+ .organization-card-activate { font-size: 15px; }
+ .organization-card-responsible strong { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .organization-canvas *, .organization-mobile-explorer *, .organization-detail-modal * { animation: none !important; transition: none !important; } }

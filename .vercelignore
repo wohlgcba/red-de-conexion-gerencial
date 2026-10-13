@@ -1,0 +1,17 @@
+# Upload only the frontend source needed for the build.
+# Offline reconciliation, source workbooks and local credentials stay local.
+.git/
+.local/
+scripts/
+supabase/
+node_modules/
+dist/
+*.xlsx
+*.sqlite
+*.sqlite-*
+*.local
+.env
+.env.*
+__pycache__/
+*.pyc
+*.log
