@@ -30,7 +30,7 @@ create temporary table admin_protected_before(entity text primary key, checksum 
     ]
     for table in PROTECTED:
         statements.append(f"insert into admin_protected_before select '{table}',md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,'[]')) from {table} t;")
-    for name in ['rcg_administration.sql', 'rcg_administration_intake.sql']:
+    for name in ['rcg_administration.sql', 'rcg_administration_intake.sql', 'rcg_dotacion_online.sql']:
         sql = (ROOT / 'supabase' / name).read_text(encoding='utf-8')
         statements.append(re.sub(r'(?m)^(begin;|commit;)\s*$', '', sql))
     for table in PROTECTED:

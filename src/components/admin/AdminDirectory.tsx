@@ -8,6 +8,7 @@ import { AdminLoadState, AdminPagination } from './AdminPrimitives'
 import { AdminRequestTable } from './AdminRequestTable'
 import { AdminRequestDetail } from './AdminRequestDetail'
 import { AdminMembers } from './AdminMembers'
+import { AdminDotacion } from './AdminDotacion'
 import { EMPTY_ADMIN_FILTERS, TRAYS } from './adminModel'
 import { useAdminQuery } from './useAdminQuery'
 import { listAdminRequests } from '../../services/administration'
@@ -15,6 +16,7 @@ import type { AdminFilters as Filters, AdminTray } from '../../types/administrat
 
 export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
   const [view, setView] = useState<'requests' | 'members' | 'quality'>('requests')
+  const [memberSearch, setMemberSearch] = useState('')
   const [tray, setTray] = useState<AdminTray>('access')
   const [filtersByTray, setFiltersByTray] = useState<Record<AdminTray, Filters>>(() => Object.fromEntries(TRAYS.map(item => [item.id, { ...EMPTY_ADMIN_FILTERS, status: item.id === 'all' ? '' : 'open' }])) as Record<AdminTray, Filters>)
   const [selection, setSelection] = useState<Partial<Record<AdminTray, string>>>({})
@@ -32,8 +34,8 @@ export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
       {([{ id: 'access', label: 'Pendientes de acceso', icon: UserRoundPlus }, { id: 'exceptions', label: 'Excepciones pendientes', icon: TriangleAlert }, { id: 'change', label: 'Cambios de datos', icon: FilePenLine }, { id: 'all', label: 'Total en revisión', icon: Clock3 }] as const).map(item => <button key={item.id} type="button" onClick={() => showCount(item.id)} aria-label={`${item.label}: ${query.data?.counts[item.id] ?? 'sin datos'}`}><span><item.icon size={23} /></span><div>{item.label}<strong>{query.data ? query.data.counts[item.id] : '—'}</strong></div></button>)}
     </div></Surface>
     {navigation}
-    <div className="administration-tools" aria-label="Herramientas del Directorio"><Button variant={view === 'requests' ? 'primary' : 'outline'} onClick={() => setView('requests')}><FilePenLine size={16} /> Solicitudes</Button><Button variant={view === 'members' ? 'primary' : 'outline'} onClick={() => setView('members')}><UsersRound size={16} /> Gestionar integrantes</Button><Button variant={view === 'quality' ? 'primary' : 'outline'} onClick={() => setView('quality')}><ShieldCheck size={16} /> Calidad de datos</Button><Link className="btn btn-outline" to="/administracion/direcciones-generales"><Building2 size={16} /> Gestionar unidades vinculadas</Link></div>
-    {view !== 'requests' ? <AdminMembers key={view} quality={view === 'quality'} /> : <>
+    <div className="administration-tools" aria-label="Herramientas del Directorio"><Button variant={view === 'requests' ? 'primary' : 'outline'} onClick={() => setView('requests')}><FilePenLine size={16} /> Solicitudes</Button><Button variant={view === 'members' ? 'primary' : 'outline'} onClick={() => { setMemberSearch(''); setView('members') }}><UsersRound size={16} /> Directorio gerencial</Button><Button variant={view === 'quality' ? 'primary' : 'outline'} onClick={() => setView('quality')}><ShieldCheck size={16} /> Cruce online con Dotación</Button><Link className="btn btn-outline" to="/administracion/direcciones-generales"><Building2 size={16} /> Gestionar unidades vinculadas</Link></div>
+    {view === 'quality' ? <AdminDotacion onReview={name => { setMemberSearch(name); setView('members') }} /> : view === 'members' ? <AdminMembers key={memberSearch} quality={false} initialSearch={memberSearch} /> : <>
       <div className={`administration-workspace${selected ? ' has-detail' : ''}`}>
         <Surface className="administration-inbox"><div className="administration-trays" role="tablist" aria-label="Bandejas del Directorio" onKeyDown={event => { const current = TRAYS.findIndex(item => item.id === tray); const index = event.key === 'ArrowRight' ? (current + 1) % TRAYS.length : event.key === 'ArrowLeft' ? (current + TRAYS.length - 1) % TRAYS.length : event.key === 'Home' ? 0 : event.key === 'End' ? TRAYS.length - 1 : -1; if (index >= 0) { event.preventDefault(); setTray(TRAYS[index].id); document.getElementById(`admin-tab-${TRAYS[index].id}`)?.focus() } }}>{TRAYS.map(item => <button key={item.id} type="button" role="tab" tabIndex={tray === item.id ? 0 : -1} id={`admin-tab-${item.id}`} aria-controls="admin-inbox" aria-selected={tray === item.id} onClick={() => setTray(item.id)}>{item.label}</button>)}</div>
           <div id="admin-inbox" role="tabpanel" aria-labelledby={`admin-tab-${tray}`}><AdminFilters value={filters} onChange={change} ministries={query.data?.ministries ?? []} tray={tray} />

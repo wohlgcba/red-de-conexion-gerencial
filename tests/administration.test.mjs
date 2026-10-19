@@ -28,6 +28,8 @@ test('administration transactions, privacy, eligibility, duplicate checks and au
   await db.exec(migration) // Safe to reapply, no production backfill.
   await db.exec(await sql('rcg_administration_intake.sql'))
   await db.exec(await sql('rcg_administration_intake.sql'))
+  await db.exec(await sql('rcg_dotacion_online.sql'))
+  await db.exec(await sql('rcg_dotacion_online.sql'))
   await db.exec(`insert into auth.users(id,email,email_confirmed_at,encrypted_password) select '${id(1)}','admin@example.test',now(),'unchanged';
     insert into red_conexion_gerencial.admin_users(user_id,email) values('${id(1)}','admin@example.test');`)
   for(let n=2;n<=12;n++) await db.query('insert into auth.users(id,email,email_confirmed_at,encrypted_password) values($1,$2,now(),$3)',[id(n),`person${n}@example.test`,'unchanged'])
@@ -152,4 +154,15 @@ test('administration transactions, privacy, eligibility, duplicate checks and au
   await db.exec('reset role');await db.query('update auth.users set email_confirmed_at=null where id=$1',[id(8)])
   await actor(8);await assert.rejects(()=>rpc('submit_access_request',['Sin','Verificar','Analista','Organismo',key(8),'Intento sin correo verificado']),/verificá/)
   await actor(null,'anon');await assert.rejects(()=>rpc('submit_access_request',['Anon','Prueba','Analista','Organismo',key(8),'Intento anónimo de ingreso']))
+  // The online join gets keys only on the server, never through an authenticated browser RPC.
+  await assert.rejects(()=>rpc('server_directory_for_dotacion',[id(1)]))
+  await actor(1);await assert.rejects(()=>rpc('server_directory_for_dotacion',[id(1)]))
+  await actor(2);await assert.rejects(()=>rpc('server_directory_for_dotacion',[id(1)]))
+  await actor(null,'service_role')
+  const serverDirectory=await rpc('server_directory_for_dotacion',[id(1)])
+  assert.equal(serverDirectory.length,3)
+  assert(serverDirectory.some(person=>person.identifier===key(2)))
+  assert(!JSON.stringify(serverDirectory).includes('encrypted_password'))
+  await assert.rejects(()=>rpc('server_directory_for_dotacion',[id(2)]),/administrativo/)
+  await assert.rejects(()=>db.query('select * from rcg_private.directory_link_keys'))
 })
