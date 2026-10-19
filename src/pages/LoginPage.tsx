@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { requireSupabase } from '../lib/supabase'
 
@@ -84,12 +85,13 @@ export function LoginPage() {
             </button>
           </span>
         </label>}
-        {mode === 'password' && <small>Integrantes nuevos: el primer ingreso será con CUIT de 11 dígitos, sin guiones, y después deberán elegir una contraseña. Las cuentas existentes, incluida la administración, pueden ingresar con su clave actual o con el enlace por correo.</small>}
+        {mode === 'password' && <small>Cuentas creadas por la Red: primer ingreso con CUIT de 11 dígitos y luego cambio de contraseña. Si solicitaste ingreso desde el formulario, usá la contraseña que elegiste. Las cuentas existentes conservan su clave actual.</small>}
         <button className="btn btn-yellow" type="submit" disabled={busy}>{busy ? 'Ingresando...' : mode === 'link' ? 'Enviar enlace de acceso' : 'Ingresar'} <ArrowRight size={17} /></button>
       </form>
       {needsEmailVerification && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('verify')}>Enviar enlace de verificación</button>}
       {mode === 'password' && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('reset')}>Olvidé mi contraseña</button>}
       {message && <p className="auth-message" role="status">{message}</p>}
+      <Link className="auth-link-button" to="/solicitar-acceso">Solicitar ingreso a la Red</Link>
       <small>El acceso a los datos está reservado a integrantes y administradores habilitados.</small>
     </div>
   </div>

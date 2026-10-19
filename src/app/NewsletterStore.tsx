@@ -6,9 +6,11 @@ import { PasswordChangeForm } from '../components/common/PasswordChangeForm'
 import { requireSupabase, supabase } from '../lib/supabase'
 import * as catalog from '../services/catalog'
 import * as profilePhotos from '../services/profilePhotos'
+import { getMyDirectoryGate } from '../services/administration'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 import { DirectoryLoading } from '../components/directory/DirectoryLoading'
+import { Link } from 'react-router-dom'
 
 async function withClockRetry<T>(operation: () => Promise<T>): Promise<T> {
   for (const delay of [0, 1500, 4000]) {
@@ -58,6 +60,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | undefined>()
   const [mustChangePassword, setMustChangePassword] = useState(false)
+  const [directoryGate, setDirectoryGate] = useState<string | null>(null)
   const [sessionVersion, setSessionVersion] = useState(0)
   const sessionOwner = useRef({ userId: null as string | null, version: 0 })
   const loads = useRef({ sequence: 0, mounted: false })
@@ -82,6 +85,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setPeople([]); setDirectorates([]); setItems([])
         setCurrentPersonId(null); setIsAdmin(false); setMustChangePassword(false)
         setCurrentPhotoUrl(undefined)
+        setDirectoryGate(null)
       }
       setUser(nextUser)
       setAuthLoading(false)
@@ -103,6 +107,14 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     const request = ++lifecycle.sequence
     const isCurrent = () => lifecycle.mounted && sessionOwner.current.userId === userId && sessionOwner.current.version === sessionVersion && lifecycle.sequence === request
     try {
+      const gate = await withClockRetry(getMyDirectoryGate)
+      if (!isCurrent()) return
+      setDirectoryGate(gate)
+      if (gate && gate !== 'approved') {
+        setPeople([]); setDirectorates([]); setItems([])
+        setCurrentPersonId(null); setIsAdmin(false); setError('')
+        return
+      }
       const changeRequired = await withClockRetry(catalog.mustChangeInitialPassword)
       if (!isCurrent()) return
       setMustChangePassword(changeRequired)
@@ -150,9 +162,10 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
   if (!user) return <LoginPage />
   if (dataLoading) return window.location.pathname.replace(/\/$/, '') === '/directorio' ? <DirectoryLoading /> : <div className="auth-screen">Cargando la Red...</div>
+  if (directoryGate && directoryGate !== 'approved') return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Conexión Gerencial</div><h1>{directoryGate === 'pending' ? 'Solicitud pendiente de aprobación' : directoryGate === 'suspended' ? 'Acceso suspendido' : 'Solicitud no aprobada'}</h1><p>{directoryGate === 'pending' ? 'Tu solicitud está en revisión por la administración de la Red. Podrás ingresar cuando se apruebe el acceso.' : 'Contactá a la administración de la Red para consultar el estado de tu acceso.'}</p><Link className="btn btn-primary" to="/solicitar-acceso">Ver mi solicitud</Link><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>
   if (mustChangePassword) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Redes · Desde adentro</div><h1>Elegí una contraseña nueva</h1><p>Para proteger tu cuenta, cambiá la contraseña inicial antes de ingresar al directorio.</p><PasswordChangeForm firstAccess onComplete={refresh} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
-  if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
+  if (!currentPersonId && !isAdmin) return <div className="auth-screen"><div className="auth-card"><h1>Acceso no habilitado</h1><p>Tu cuenta está autenticada, pero todavía no tiene un perfil del directorio ni un rol habilitado.</p><Link className="btn btn-primary" to="/solicitar-acceso">Solicitar ingreso</Link><button className="btn btn-primary" onClick={() => void refresh()}>Volver a comprobar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
 
   const value: Store = {
     user, people, directorates, items, currentPersonId, isAdmin, refresh, currentPhotoUrl,

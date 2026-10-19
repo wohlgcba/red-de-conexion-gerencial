@@ -1,6 +1,6 @@
 import { CheckCheck, LockKeyhole, LogOut, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { HeaderNotification } from '../../mocks/headerNotifications'
+import type { HeaderNotification } from '../../services/notifications'
 import { HeaderDropdown } from './HeaderDropdown'
 
 export function UserMenu({ id, name, role, organization, onClose, onSignOut, busy }: {
@@ -18,16 +18,16 @@ export function UserMenu({ id, name, role, organization, onClose, onSignOut, bus
   </HeaderDropdown>
 }
 
-export function NotificationMenu({ id, notifications, onRead, onReadAll }: {
+export function NotificationMenu({ id, notifications, onRead, onReadAll, busy, loading, error, onRetry }: {
   id: string; notifications: HeaderNotification[]; onRead: (id: string) => void; onReadAll: () => void
+  busy: boolean; loading: boolean; error: string; onRetry: () => void
 }) {
   const unread = notifications.filter(item => !item.read)
   return <HeaderDropdown id={id} label="Notificaciones">
-    <div className="header-notification-heading"><h2>Notificaciones</h2><span>Demostración</span></div>
-    <p className="header-demo-note">Ejemplos de interfaz; no son avisos reales.</p>
-    {unread.length ? <>
-      <ul className="header-notification-list">{unread.map(item => <li key={item.id}><button type="button" onClick={() => onRead(item.id)} aria-label={`${item.message}. Marcar como leída`}><span className="header-unread-dot" />{item.message}</button></li>)}</ul>
-      <button type="button" className="header-read-all" onClick={onReadAll}><CheckCheck size={16} /> Marcar todas como leídas</button>
+    <div className="header-notification-heading"><h2>Notificaciones</h2></div>
+    {error ? <div className="header-no-notifications" role="alert"><p>{error}</p><button type="button" onClick={onRetry}>Reintentar</button></div> : loading ? <p className="header-no-notifications" role="status">Cargando notificaciones…</p> : unread.length ? <>
+      <ul className="header-notification-list">{unread.map(item => <li key={item.id}><button type="button" disabled={busy} onClick={() => onRead(item.id)} aria-label={`${item.message}. Marcar como leída`}><span className="header-unread-dot" />{item.message}</button><Link className="header-notification-link" to={item.href} onClick={() => onRead(item.id)}>Ver solicitud</Link></li>)}</ul>
+      <button type="button" className="header-read-all" disabled={busy} onClick={onReadAll}><CheckCheck size={16} /> Marcar todas como leídas</button>
     </> : <p className="header-no-notifications" role="status">No tenés notificaciones nuevas.</p>}
   </HeaderDropdown>
 }

@@ -1,0 +1,11 @@
+import type { AdminAction, AdminFilters, AdminTray, ChangeField, RequestStatus } from '../../types/administration'
+
+export const EMPTY_ADMIN_FILTERS: AdminFilters = { query: '', status: '', ministry: '', evidence: '', eligibility: '', duplicates: '', reason: '', kind: '', risk: '', field: '', from: '', to: '', sort: 'newest', page: 1, pageSize: 10 }
+export const TRAYS: { id: AdminTray; label: string }[] = [{ id: 'access', label: 'Solicitudes de acceso' }, { id: 'exceptions', label: 'Excepciones' }, { id: 'change', label: 'Cambios de datos' }, { id: 'all', label: 'Todos' }]
+export const STATUS_LABELS: Record<RequestStatus, string> = { pending: 'Pendiente', reviewing: 'En revisión', approved: 'Aprobada', rejected: 'Rechazada', information: 'Requiere información' }
+export const FIELD_LABELS: Record<ChangeField, string> = { position_title: 'Cargo', ministry: 'Ministerio / Área rectora', secretariat: 'Secretaría / Subsecretaría', directorate: 'Dirección General', email: 'Correo institucional' }
+export const REASON_LABELS: Record<string, string> = { missing: 'No encontrada en Dotación', non_manager: 'Cargo no gerencial', role_changed: 'Cambio de cargo detectado', duplicate_email: 'Correo duplicado', duplicate_identifier: 'Identificador duplicado', ambiguous: 'Coincidencia ambigua', invalid_identifier: 'Identificador faltante o inválido', unverified: 'Verificación pendiente', identity: 'Conflicto de cuenta', discrepancy: 'Diferencia con Dotación', other: 'Otro motivo justificado' }
+export const ACTION_LABELS: Record<AdminAction, string> = { approve: 'Aprobar', exception: 'Aprobar como excepción', reject: 'Rechazar', information: 'Solicitar información', review: 'Marcar en revisión', pending: 'Mantener pendiente', revoke: 'Revocar excepción' }
+export const isOpenRequest = (status: RequestStatus) => ['pending', 'reviewing', 'information'].includes(status)
+export const adminDate = (value: string) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+export function requestSummary(kind: 'access' | 'change', field: ChangeField | null) { return kind === 'access' ? 'Solicitud de acceso al Directorio de la Red.' : `Actualización de ${field ? FIELD_LABELS[field].toLowerCase() : 'datos institucionales'}.` }

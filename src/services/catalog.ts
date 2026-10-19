@@ -52,9 +52,13 @@ export async function mustChangeInitialPassword(): Promise<boolean> {
   return Array.isArray(data) && data.some(row => row.must_change_password === true)
 }
 
-export async function savePerson(person: Partial<Person> & Pick<Person, 'givenName' | 'familyName' | 'role' | 'ministry' | 'email'>): Promise<void> {
+export async function savePerson(person: Partial<Person> & Pick<Person, 'givenName' | 'familyName' | 'role' | 'ministry' | 'email'>, administrativeReason?: string): Promise<void> {
   const values = { given_name: person.givenName.trim(), family_name: person.familyName.trim(), position_title: person.role.trim(), ministry: person.ministry.trim(), secretariat: person.secretariat?.trim() ?? '', directorate: person.directorate?.trim() ?? '', directorate_id: person.directorateId ?? null, phone: person.phone?.trim() ?? '', email: person.email.trim().toLowerCase(), advisory_topics: person.advisoryTopicsRaw ?? person.topics?.join('; ') ?? '', bio: person.bio?.trim() ?? '' }
-  if (person.id) {
+  if (administrativeReason) {
+    const { error } = await db().rpc('admin_save_person', { p_id: person.id ?? null, p_version: person.version ?? 0, p_values: values, p_note: administrativeReason })
+    if (error?.code === '40001') throw new Error('Otro administrador modificó el perfil. Actualizá los datos antes de guardar.')
+    check(error)
+  } else if (person.id) {
     const { data, error } = await db().from('people').update(values).eq('id', person.id).eq('version', person.version ?? 0).select('id')
     check(error)
     if (!data?.length) throw new Error('El perfil cambió desde que lo abriste. Actualizá la página.')

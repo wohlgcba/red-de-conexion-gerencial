@@ -2,13 +2,18 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Bell, ChevronDown } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useCatalog } from '../../app/useCatalog'
-import { getMockHeaderNotifications } from '../../mocks/headerNotifications'
+import { useNotifications } from '../../app/useNotifications'
 import { UserAvatar } from './UserAvatar'
 import { NotificationMenu, UserMenu } from './HeaderMenus'
 
 type Menu = 'notifications' | 'user'
 
 export function HeaderUserArea() {
+  const { user } = useCatalog()
+  return <HeaderControls key={user.id} />
+}
+
+function HeaderControls() {
   const { user, people, currentPersonId, isAdmin, signOut, currentPhotoUrl } = useCatalog()
   const location = useLocation()
   const root = useRef<HTMLDivElement>(null)
@@ -16,7 +21,7 @@ export function HeaderUserArea() {
   const notificationButton = useRef<HTMLButtonElement>(null)
   const id = useId()
   const [menu, setMenu] = useState<{ type: Menu; routeKey: string } | null>(null)
-  const [notifications, setNotifications] = useState(getMockHeaderNotifications)
+  const notifications = useNotifications()
   const [signingOut, setSigningOut] = useState(false)
   const [error, setError] = useState('')
   const open = menu?.routeKey === location.key ? menu.type : null
@@ -28,7 +33,7 @@ export function HeaderUserArea() {
   const organization = person?.ministry || metadataText('ministry') || metadataText('organization')
   const image = metadataText('avatar_url') || metadataText('picture') || metadataText('photo_url')
   const photoUrl = currentPhotoUrl || person?.photoUrl || (/^https?:\/\//i.test(image) ? image : undefined)
-  const unreadCount = notifications.filter(item => !item.read).length
+  const unreadCount = notifications.unreadCount
 
   useEffect(() => {
     if (!open) return
@@ -46,7 +51,7 @@ export function HeaderUserArea() {
     return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape) }
   }, [open])
 
-  const toggle = (type: Menu) => { setError(''); setMenu(open === type ? null : { type, routeKey: location.key }) }
+  const toggle = (type: Menu) => { setError(''); if (type === 'notifications' && open !== type) void notifications.refresh(); setMenu(open === type ? null : { type, routeKey: location.key }) }
   const logout = async () => {
     setMenu(null)
     setError('')
@@ -56,7 +61,7 @@ export function HeaderUserArea() {
     finally { setSigningOut(false) }
   }
   const markRead = (notificationId?: string) => {
-    setNotifications(items => items.map(item => !notificationId || item.id === notificationId ? { ...item, read: true } : item))
+    void notifications.markRead(notificationId)
     window.requestAnimationFrame(() => {
       const panel = root.current?.querySelector<HTMLElement>('.header-dropdown')
       ;(panel?.querySelector<HTMLElement>('button') ?? panel)?.focus()
@@ -81,7 +86,7 @@ export function HeaderUserArea() {
         <UserAvatar key={photoUrl} name={name} photoUrl={photoUrl} />
         <ChevronDown size={15} strokeWidth={1.8} aria-hidden="true" />
       </button>
-      {open === 'notifications' && <NotificationMenu id={`${id}-notifications`} notifications={notifications} onRead={markRead} onReadAll={() => markRead()} />}
+      {open === 'notifications' && <NotificationMenu id={`${id}-notifications`} notifications={notifications.items} onRead={markRead} onReadAll={() => markRead()} busy={notifications.busy} loading={notifications.loading} error={notifications.error} onRetry={() => void notifications.refresh()} />}
       {open === 'user' && <UserMenu id={`${id}-user`} name={name} role={role} organization={organization} onClose={() => setMenu(null)} onSignOut={() => void logout()} busy={signingOut} />}
       {error && <p className="header-action-error" role="alert">{error}</p>}
     </div>

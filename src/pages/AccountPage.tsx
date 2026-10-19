@@ -5,6 +5,8 @@ import { Chip, PageHeading, Surface } from '../components/common/UI'
 import { UserAvatar } from '../components/layout/UserAvatar'
 import { ProfilePhotoUpload } from '../components/common/ProfilePhotoUpload'
 import './account.css'
+import { MyDirectoryRequests } from '../components/admin/MyDirectoryRequests'
+import './access-request.css'
 
 export function AccountPage() {
   const { user, people, currentPersonId, isAdmin, currentPhotoUrl } = useCatalog()
@@ -43,6 +45,7 @@ export function AccountPage() {
         </>}
       </Surface>
       <aside className="account-access-aside">
+        <Surface className="account-access-card"><MyDirectoryRequests canChange={Boolean(person)} /></Surface>
         <Surface className="account-access-card"><h2><ShieldCheck size={21} aria-hidden="true" /> Acceso a la Red</h2><dl><div><dt>Correo de acceso</dt><dd><Mail size={17} aria-hidden="true" /> {user.email || 'No informado'}</dd></div><div><dt>Permisos</dt><dd>{isAdmin ? 'Administrador' : 'Integrante'}</dd></div></dl></Surface>
         <Surface className="account-access-card"><h2><LockKeyhole size={21} aria-hidden="true" /> Contraseña</h2><p>Administrá tu contraseña desde una pantalla independiente.</p><Link className="btn btn-primary" to="/mi-cuenta/contrasena">Cambiar contraseña</Link></Surface>
       </aside>

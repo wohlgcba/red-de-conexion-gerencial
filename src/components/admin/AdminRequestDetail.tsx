@@ -1,0 +1,44 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Check, Clock3, FileCheck2, RefreshCw, ShieldCheck, X } from 'lucide-react'
+import { Avatar } from '../common/Avatar'
+import { Button } from '../common/UI'
+import { DirectoryDialog } from '../directory/DirectoryDialog'
+import { AdminBadge, AdminLoadState, EligibilityBadge, EvidenceBadge, RequestBadge } from './AdminPrimitives'
+import { AdminDecisionDialog } from './AdminDecisionDialog'
+import { useAdminQuery } from './useAdminQuery'
+import { decideAdminRequest, getAdminRequest } from '../../services/administration'
+import { ACTION_LABELS, adminDate, FIELD_LABELS, isOpenRequest, REASON_LABELS, STATUS_LABELS } from './adminModel'
+import type { AdminAction } from '../../types/administration'
+
+export function AdminRequestDetail({ id, revision, onClose, onChanged }: { id: string; revision: number; onClose: () => void; onChanged: (saved?: boolean) => void }) {
+  const load = useCallback(() => { void revision; return getAdminRequest(id) }, [id, revision])
+  const query = useAdminQuery(load)
+  const [action, setAction] = useState<AdminAction | null>(null)
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width:1100px)').matches)
+  useEffect(() => { const media = window.matchMedia('(max-width:1100px)'); const listener = () => setNarrow(media.matches); media.addEventListener('change', listener); return () => media.removeEventListener('change', listener) }, [])
+  const detail = query.data
+  const closeDecision = useCallback(() => setAction(null), [])
+  const body = !detail ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} /> : <>
+    <div className="administration-detail-identity"><Avatar name={detail.name} size={52} /><div><h2>{detail.name}</h2><p>{detail.ministry || 'Organismo no informado'}</p><p>{detail.email}</p><p className="administration-identifier">CUIL/CUIT: {detail.identifier || 'No informado'}</p></div><RequestBadge status={detail.status} /></div>
+    <section className="administration-detail-section"><h3><Clock3 size={16} /> Información de la solicitud</h3><dl><div><dt>Tipo</dt><dd>{detail.kind === 'access' ? 'Acceso al Directorio' : 'Cambio de datos'}</dd></div><div><dt>Fecha</dt><dd>{adminDate(detail.createdAt)}</dd></div><div><dt>Cargo declarado</dt><dd>{detail.role || 'No informado'}</dd></div><div><dt>Intervino</dt><dd>{detail.reviewer || 'Sin intervención'}</dd></div></dl></section>
+    {detail.kind === 'change' && <section className="administration-detail-section"><h3>{detail.field ? FIELD_LABELS[detail.field] : 'Detalle del cambio'}</h3><div className="administration-comparison"><div><small>Valor al solicitar</small>{detail.oldValue || 'No informado'}</div><span>→</span><div><small>Nuevo valor solicitado</small>{detail.newValue}</div></div><p>Origen: solicitud del integrante. Impacto: información institucional visible en la Red.</p>{detail.field === 'email' && <p>El correo de acceso a Supabase Auth se administra por separado.</p>}</section>}
+    <section className="administration-detail-section"><h3><FileCheck2 size={16} /> Resultado en Dotación <EvidenceBadge value={detail.validation.evidence} /></h3><dl><div><dt>Cargo detectado</dt><dd>{detail.validation.roles.join(' · ') || 'No identificado'}</dd></div><div><dt>Organismo real</dt><dd>{detail.validation.ministry || 'No disponible'}</dd></div><div><dt>Repartición</dt><dd>{detail.validation.unit || 'No disponible'}</dd></div><div><dt>Fuente</dt><dd>{detail.validation.source || 'Pendiente de carga'}</dd></div><div><dt>Fecha de la fuente</dt><dd>{detail.validation.sourceDate || 'No informada'}</dd></div></dl><EligibilityBadge value={detail.validation.eligibility} /></section>
+    <section className="administration-detail-section"><h3><ShieldCheck size={16} /> Validación de identidad</h3><dl><div><dt>Identificador</dt><dd>{detail.validation.validIdentifier ? 'Formato y dígito verificador válidos' : 'Faltante o inválido'}</dd></div><div><dt>Coincidencias adicionales por correo</dt><dd>{detail.validation.duplicateEmail}</dd></div><div><dt>Coincidencias adicionales por identificador</dt><dd>{detail.validation.duplicateIdentifier}</dd></div><div><dt>Cuenta vinculada</dt><dd>{detail.validation.alreadyLinked ? 'Sí' : 'No'}</dd></div></dl>{detail.validation.authConflict && <p className="administration-warning">Hay un conflicto de identidad. Resolvelo antes de aprobar; una excepción no puede duplicar ni compartir cuentas.</p>}
+      {detail.related.map(item => <div key={item.id} className="administration-related-identity"><strong>{item.name}</strong><p>{item.email} · {item.role}</p><p>{item.ministry} · {item.active ? 'Activo' : 'Inactivo'}</p><small>CUIL/CUIT: {item.identifier || 'Sin verificar'}</small></div>)}
+      {!detail.related.length && <AdminBadge>Sin registros adicionales coincidentes</AdminBadge>}
+    </section>
+    {detail.validation.reasons.length > 0 && <section className="administration-detail-section"><h3>Advertencias para revisión</h3><ul>{detail.validation.reasons.map(reason => <li key={reason}>{REASON_LABELS[reason] || reason}</li>)}</ul></section>}
+    <section className="administration-detail-section"><h3>Justificación y observaciones</h3><p>{detail.reason || 'Sin observaciones del solicitante.'}</p>{detail.note && <p><strong>Administración:</strong> {detail.note}</p>}{detail.exceptionActive && <div className="administration-exception-note"><AdminBadge tone="good">Excepción vigente</AdminBadge><p>{detail.exceptionJustification}</p><small>Sin vencimiento automático.</small></div>}</section>
+    <section className="administration-detail-section"><h3>Historial de auditoría</h3>{detail.history.length ? <ol className="administration-history">{detail.history.map(event => <li key={event.id}><strong>{ACTION_LABELS[event.action as AdminAction] || ({ created: 'Solicitud registrada' }[event.action]) || event.action}</strong><small>{event.actor} · {adminDate(event.at)}</small>{event.reason && <p>{event.reason}</p>}</li>)}</ol> : <p>No hay decisiones registradas.</p>}{detail.priorRequests.length > 0 && <details><summary>Solicitudes anteriores ({detail.priorRequests.length})</summary>{detail.priorRequests.map(row => <p key={row.id}>{adminDate(row.createdAt)} · {STATUS_LABELS[row.status]}</p>)}</details>}</section>
+    <div className="administration-detail-actions">{isOpenRequest(detail.status) && <>
+      <Button variant="yellow" disabled={!detail.validation.ordinary || query.loading} onClick={() => setAction('approve')} title={!detail.validation.ordinary ? 'Requiere revisar las advertencias o aprobar como excepción' : undefined}><Check size={16} />{detail.kind === 'change' ? 'Aprobar cambio' : 'Aprobar acceso'}</Button>
+      <Button disabled={detail.validation.authConflict || detail.validation.duplicateEmail + detail.validation.duplicateIdentifier > 0 || query.loading} onClick={() => setAction('exception')}>Aprobar como excepción</Button>
+      <Button disabled={query.loading} onClick={() => setAction('information')}>Solicitar información</Button>
+      <Button disabled={query.loading} className="administration-danger-outline" onClick={() => setAction('reject')}>Rechazar</Button>
+      <Button disabled={query.loading} onClick={() => setAction(detail.status === 'reviewing' ? 'pending' : 'review')}>{detail.status === 'reviewing' ? 'Mantener pendiente' : 'Marcar en revisión'}</Button>
+    </>}{detail.exceptionActive && <Button className="administration-danger-outline" onClick={() => setAction('revoke')}>Revocar excepción</Button>}<Button disabled={query.loading} onClick={query.reload}><RefreshCw size={15} /> Actualizar validación</Button></div>
+    <p className="administration-disclaimer">Toda decisión queda registrada. Las validaciones se vuelven a comprobar en el servidor al confirmar.</p>
+  </>
+  if (action && detail) return <AdminDecisionDialog detail={detail} action={action} onClose={closeDecision} onRefresh={() => { setAction(null); query.reload(); onChanged(false) }} onConfirm={async (note, reason) => { await decideAdminRequest(detail.id, detail.version, action, note, reason); setAction(null); query.reload(); onChanged(true) }} />
+  return narrow ? <DirectoryDialog title="Revisión administrativa" className="administration-mobile-detail" onClose={onClose}>{body}</DirectoryDialog> : <aside className="surface administration-detail" aria-label="Detalle de la solicitud"><div className="administration-panel-close"><strong>Revisión administrativa</strong><button type="button" aria-label="Cerrar revisión" onClick={onClose}><X size={19} /></button></div>{body}</aside>
+}
