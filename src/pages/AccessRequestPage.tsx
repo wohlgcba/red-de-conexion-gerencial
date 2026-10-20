@@ -88,10 +88,10 @@ export function AccessRequestPage() {
       if (lookup.signal.aborted) return
       setProfiles(result.profiles)
       if (result.profiles.length) setProfile(result.profiles[0])
-      setLookupNote(result.outcome === 'matched' ? 'Encontramos tus datos gerenciales en Dotación. Revisalos y corregí lo que necesites antes de enviar la solicitud.' : result.outcome === 'other' ? 'No encontramos un cargo gerencial vigente. Podés completar tus datos y solicitar el ingreso como excepción; la administración revisará tu caso.' : 'No encontramos datos gerenciales verificables para este correo y CUIT. Si sos gerente o querés solicitar una excepción, completá tus datos manualmente.')
+      setLookupNote(result.outcome === 'matched' ? 'Completamos tus datos. Revisalos antes de enviar.' : result.outcome === 'other' ? 'Completá tus datos para solicitar una excepción.' : 'Completá tus datos para continuar.')
     } catch {
       if (lookup.signal.aborted) return
-      setLookupNote('El padrón guardado no está disponible. Podés completar tus datos manualmente y enviarlos a revisión.')
+      setLookupNote('No pudimos consultar Dotación. Completá tus datos manualmente.')
     }
     if (!lookup.signal.aborted) setStep(3)
   }
@@ -115,7 +115,7 @@ export function AccessRequestPage() {
       setPassword('')
       if (result.data.session?.user.email_confirmed_at && intakeEmail(result.data.session.user.email ?? '') === chosenEmail) {
         setUser(result.data.session.user); await loadProfile()
-      } else setMessage('Revisá el correo que ingresaste y abrí el enlace de verificación. El enlace te devolverá a este formulario para continuar con tus datos, sin crear otra cuenta.')
+      } else setMessage('Abrí el enlace que te enviamos por correo para continuar.')
     } catch (cause) {
       const text = cause instanceof Error ? cause.message : ''
       setError(/invalid login credentials/i.test(text) ? 'Correo o contraseña incorrectos. Si ya usás BASE GCBA, utilizá tu contraseña actual.' : /rate.limit|security purposes|too many/i.test(text) ? 'Esperá unos minutos antes de volver a intentarlo.' : /email.*confirm/i.test(text) ? 'Verificá tu correo antes de continuar.' : 'No pudimos completar el acceso. Revisá los datos; si ya tenés cuenta, elegí «Ya tengo cuenta».')
@@ -135,37 +135,35 @@ export function AccessRequestPage() {
   const changeIdentity = () => { controller.current?.abort(); setStep(1); setProfiles([]); setProfile(EMPTY); setPassword(''); setMessage(''); setError(''); setSent(false); setViewingRequests(false); setSearchParams({}, { replace: true }) }
   if (!supabase) return <div className="auth-screen"><p>El servicio de ingreso no está configurado.</p></div>
   return <main className="access-request-page"><div className="access-request-brand"><strong>RED DE CONEXIÓN GERENCIAL</strong><img src="/assets/DesdeAdentroLogo.svg" alt="BA Desde adentro" /></div>
-    <div className="surface access-request-card"><h1>{showRequests ? 'Tu solicitud de ingreso' : 'Solicitar ingreso a la Red'}</h1><p>{showRequests ? 'Consultá el estado de tu solicitud y las observaciones de la administración.' : 'Completá tus datos. Si encontramos tu cargo gerencial en Dotación, te ayudamos a completarlos. Si no, podés cargarlos manualmente. La administración revisará tu solicitud antes de habilitar el acceso.'}</p>
+    <div className="surface access-request-card"><h1>{showRequests ? 'Tu solicitud de ingreso' : 'Solicitar ingreso a la Red'}</h1><p>{showRequests ? 'Consultá el estado y las observaciones de tu solicitud.' : step === 1 ? 'Ingresá tu correo y CUIT para comenzar.' : step === 2 ? 'Verificá tu correo para continuar.' : 'La administración revisará tu solicitud.'}</p>
       {showRequests ? <><MyDirectoryRequests key={user?.id} /><div className="access-request-footer"><Link className="btn btn-primary" to="/newsletters">Ir a la Red</Link><Button variant="ghost" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</Button></div></> : <>
       <ol className="access-steps" aria-label="Pasos de ingreso">{['Correo y CUIT', 'Verificación', 'Tus datos'].map((label, index) => <li key={label} aria-current={step === index + 1 ? 'step' : undefined} className={step > index + 1 ? 'complete' : ''}><span>{step > index + 1 ? <Check size={15} /> : index + 1}</span>{label}</li>)}</ol>
       {step === 1 && <form onSubmit={event => void completeIdentity(event)}>
         <label>Correo electrónico<input type="email" autoComplete="off" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} placeholder="Escribí el correo que querés usar en la Red" /></label>
         <label>CUIT / CUIL<input autoComplete="off" inputMode="numeric" required maxLength={15} value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="11 dígitos, con o sin guiones" /></label>
-        <p className="access-privacy"><ShieldCheck size={17} /> Elegí tu correo de contacto. El CUIT se usa únicamente para la validación administrativa y no se publica.</p>
+        <p className="access-privacy"><ShieldCheck size={17} /> Tu CUIT no se publicará.</p>
         <Button variant="yellow" type="submit" disabled={loading || busy}>{busy ? 'Consultando tus datos…' : 'Continuar'} <ArrowRight size={17} /></Button>
       </form>}
-      {step === 2 && <><p className="access-email-choice">Correo elegido: <strong>{chosenEmail}</strong></p><Button onClick={changeIdentity} disabled={busy}><ArrowLeft size={15} /> Cambiar correo o CUIT</Button>
-        {loading ? <p role="status">Verificando sesión…</p> : matchingSession ? <><p className="access-verified">Este correo ya está verificado. Podés continuar.</p><Button variant="yellow" onClick={() => void continueVerified()} disabled={busy}>{busy ? 'Consultando padrón…' : 'Continuar con mis datos'}</Button></> : <>
-          {user && <p className="access-privacy">Hay una sesión con otro correo o sin verificar. Para esta solicitud usaremos únicamente el correo que completaste.</p>}
+      {step === 2 && <><p className="access-email-choice">Correo <strong>{chosenEmail}</strong></p><Button onClick={changeIdentity} disabled={busy}><ArrowLeft size={15} /> Cambiar correo o CUIT</Button>
+        {loading ? <p role="status">Verificando sesión…</p> : matchingSession ? <><p className="access-verified">Correo verificado.</p><Button variant="yellow" onClick={() => void continueVerified()} disabled={busy}>{busy ? 'Consultando tus datos…' : 'Continuar'}</Button></> : <>
+          {user && <p className="access-privacy">Para continuar, ingresá con el correo que elegiste.</p>}
           <div className="access-mode"><button type="button" disabled={busy} aria-pressed={mode === 'new'} onClick={() => { setMode('new'); setError('') }}>Crear cuenta</button><button type="button" disabled={busy} aria-pressed={mode === 'existing'} onClick={() => { setMode('existing'); setError('') }}>Ya tengo cuenta</button></div>
           <form onSubmit={event => void authenticate(event)}><label>Contraseña<div className="access-password"><input type={showPassword ? 'text' : 'password'} autoComplete={mode === 'new' ? 'new-password' : 'current-password'} minLength={mode === 'new' ? PASSWORD_MIN_LENGTH : undefined} pattern={mode === 'new' ? PASSWORD_PATTERN : undefined} title={mode === 'new' ? PASSWORD_REQUIREMENTS : undefined} required value={password} disabled={busy} onChange={event => setPassword(event.target.value)} /><button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
-            <small>{mode === 'new' ? `${PASSWORD_REQUIREMENTS} Te enviaremos un enlace para verificar el correo elegido.` : 'Si ya usás otra aplicación de BASE GCBA, utilizá la misma contraseña.'}</small>
+            <small>{mode === 'new' ? PASSWORD_REQUIREMENTS : 'Usá tu contraseña de BASE GCBA.'}</small>
             <Button variant="yellow" type="submit" disabled={busy}>{busy ? 'Procesando…' : mode === 'new' ? 'Verificar mi correo' : 'Ingresar y continuar'}</Button></form>
         </>}
       </>}
-      {step === 3 && <>{!sent ? <><p className="access-email-choice">Correo de la solicitud: <strong>{chosenEmail}</strong></p><p className="access-lookup-note" role="status">{lookupNote}</p>
+      {step === 3 && <>{!sent ? <><p className="access-email-choice">Correo <strong>{chosenEmail}</strong></p><p className="access-lookup-note" role="status">{lookupNote}</p>
         <form onSubmit={event => void request(event)}>
           {profiles.length > 1 && <label>Asignación que querés informar<select value={assignmentIndex} onChange={event => { const index = Number(event.target.value); setAssignmentIndex(index); setProfile(profiles[index]) }}>{profiles.map((item, index) => <option key={index} value={index}>{item.role} · {item.unit || item.ministry}</option>)}</select></label>}
-          <div className="access-fields">{FIELDS.map(field => <label key={field.key}>{field.label}{!field.required && <small>Opcional</small>}<input name={field.key} required={field.required} maxLength={field.max} value={profile[field.key]} onChange={event => setProfile(previous => ({ ...previous, [field.key]: event.target.value }))} /></label>)}</div>
-          {profile.unit && <p className="access-privacy">Repartición de referencia: {profile.unit}. Los datos que envíes serán revisados por administración.</p>}
-          <label>Motivo de ingreso <small>Opcional</small><textarea name="reason" rows={3} maxLength={3000} value={reason} onChange={event => setReason(event.target.value)} placeholder="Si querés, contanos por qué te interesa participar." /></label>
-          <p className="access-privacy">Podés corregir cualquier dato. El autocompletado no aprueba tu ingreso ni modifica el Directorio.</p>
-          <div className="access-form-actions"><Button onClick={() => { setStep(2); setError('') }} disabled={busy}><ArrowLeft size={15} /> Volver</Button><Button type="submit" variant="yellow" disabled={busy || !matchingSession}>{busy ? 'Enviando…' : 'Enviar solicitud de ingreso'}</Button></div>
-        </form></> : <p className="access-verified" role="status">Solicitud enviada. La administración revisará tus datos. Acá podrás consultar la decisión y sus observaciones.</p>}
+          <div className="access-fields">{FIELDS.map(field => <label key={field.key}><span>{field.label}{!field.required && <small> (opcional)</small>}</span><input name={field.key} required={field.required} maxLength={field.max} value={profile[field.key]} onChange={event => setProfile(previous => ({ ...previous, [field.key]: event.target.value }))} /></label>)}</div>
+          <label><span>Motivo de ingreso <small>(opcional)</small></span><textarea name="reason" rows={3} maxLength={3000} value={reason} onChange={event => setReason(event.target.value)} placeholder="Contanos por qué querés sumarte." /></label>
+          <div className="access-form-actions"><Button onClick={() => { setStep(2); setError('') }} disabled={busy}><ArrowLeft size={15} /> Volver</Button><Button type="submit" variant="yellow" disabled={busy || !matchingSession}>{busy ? 'Enviando…' : 'Enviar solicitud'}</Button></div>
+        </form></> : <p className="access-verified" role="status">Solicitud enviada. Pendiente de revisión.</p>}
         {matchingSession ? sent && <MyDirectoryRequests key={`${user?.id}-${sent}`} /> : <p role="alert">La sesión cambió. Volvé a verificar el correo elegido para continuar.</p>}
       </>}
       {message && <p role="status" className="access-verified">{message}</p>}{error && <p role="alert" className="form-error">{error}</p>}
-      <Link className="access-return" to="/newsletters">Volver al ingreso de la Red</Link>
+      <Link className="access-return" to="/newsletters">Volver al inicio</Link>
       </>}
     </div>
   </main>
