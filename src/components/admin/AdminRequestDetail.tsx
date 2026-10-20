@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Check, Clock3, FileCheck2, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Check, Clock3, FileCheck2, ShieldCheck } from 'lucide-react'
 import { Avatar } from '../common/Avatar'
 import { Button } from '../common/UI'
 import { DirectoryDialog } from '../directory/DirectoryDialog'
@@ -15,6 +15,8 @@ export function AdminRequestDetail({ id, revision, onClose, onChanged }: { id: s
   const query = useAdminQuery(load)
   const [action, setAction] = useState<AdminAction | null>(null)
   const detail = query.data
+  const managerConfirmed = detail?.validation.evidence === 'found' && detail.validation.eligibility === 'manager'
+  const approvalBlocked = query.loading || !!detail && (detail.validation.authConflict || detail.validation.duplicateEmail + detail.validation.duplicateIdentifier > 0 || managerConfirmed && !detail.validation.ordinary)
   const closeDecision = useCallback(() => setAction(null), [])
   const body = !detail ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} /> : <>
     <div className="administration-detail-identity"><Avatar name={detail.name} size={52} /><div><h2>{detail.name}</h2><p>{detail.ministry || 'Organismo no informado'}</p><p>{detail.email}</p><p className="administration-identifier">CUIL/CUIT: {detail.identifier || 'No informado'}</p></div><RequestBadge status={detail.status} /></div>
@@ -30,12 +32,9 @@ export function AdminRequestDetail({ id, revision, onClose, onChanged }: { id: s
     <section className="administration-detail-section"><h3>Justificación y observaciones</h3><p>{detail.reason || 'Sin observaciones del solicitante.'}</p>{detail.note && <p><strong>Administración:</strong> {detail.note}</p>}{detail.exceptionActive && <div className="administration-exception-note"><AdminBadge tone="good">Excepción vigente</AdminBadge><p>{detail.exceptionJustification}</p><small>Sin vencimiento automático.</small></div>}</section>
     <section className="administration-detail-section"><h3>Historial de auditoría</h3>{detail.history.length ? <ol className="administration-history">{detail.history.map(event => <li key={event.id}><strong>{ACTION_LABELS[event.action as AdminAction] || ({ created: 'Solicitud registrada' }[event.action]) || event.action}</strong><small>{event.actor} · {adminDate(event.at)}</small>{event.reason && <p>{event.reason}</p>}</li>)}</ol> : <p>No hay decisiones registradas.</p>}{detail.priorRequests.length > 0 && <details><summary>Solicitudes anteriores ({detail.priorRequests.length})</summary>{detail.priorRequests.map(row => <p key={row.id}>{adminDate(row.createdAt)} · {STATUS_LABELS[row.status]}</p>)}</details>}</section>
     <div className="administration-detail-actions">{isOpenRequest(detail.status) && <>
-      <Button variant="yellow" disabled={!detail.validation.ordinary || query.loading} onClick={() => setAction('approve')} title={!detail.validation.ordinary ? 'Requiere revisar las advertencias o aprobar como excepción' : undefined}><Check size={16} />{detail.kind === 'change' ? 'Aprobar cambio' : 'Aprobar acceso'}</Button>
-      <Button disabled={detail.validation.authConflict || detail.validation.duplicateEmail + detail.validation.duplicateIdentifier > 0 || query.loading} onClick={() => setAction('exception')}>Aprobar como excepción</Button>
-      <Button disabled={query.loading} onClick={() => setAction('information')}>Solicitar información</Button>
+      <Button variant="yellow" disabled={approvalBlocked} onClick={() => setAction(managerConfirmed ? 'approve' : 'exception')} title={approvalBlocked ? 'Resolvé las advertencias de validación antes de aprobar.' : undefined}><Check size={16} />{managerConfirmed ? detail.kind === 'change' ? 'Aprobar cambio' : 'Aprobar acceso' : 'Aprobar como excepción'}</Button>
       <Button disabled={query.loading} className="administration-danger-outline" onClick={() => setAction('reject')}>Rechazar</Button>
-      <Button disabled={query.loading} title="Cambia el estado de seguimiento; no habilita el acceso." onClick={() => setAction(detail.status === 'reviewing' ? 'pending' : 'review')}>{detail.status === 'reviewing' ? 'Mantener pendiente' : 'Marcar en revisión'}</Button>
-    </>}{detail.exceptionActive && <Button className="administration-danger-outline" onClick={() => setAction('revoke')}>Revocar excepción</Button>}<Button disabled={query.loading} title="Recalcula las validaciones con la información guardada; no actualiza Dotación desde MySQL." onClick={query.reload}><RefreshCw size={15} /> Actualizar validación</Button></div>
+    </>}{detail.exceptionActive && <Button className="administration-danger-outline" onClick={() => setAction('revoke')}>Revocar excepción</Button>}</div>
     <p className="administration-disclaimer">Toda decisión queda registrada. Las validaciones se vuelven a comprobar en el servidor al confirmar.</p>
   </>
   if (action && detail) return <AdminDecisionDialog detail={detail} action={action} onClose={closeDecision} onRefresh={() => { setAction(null); query.reload(); onChanged(false) }} onConfirm={async (note, reason) => { await decideAdminRequest(detail.id, detail.version, action, note, reason); setAction(null); query.reload(); onChanged(true) }} />
