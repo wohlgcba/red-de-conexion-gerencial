@@ -1,7 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DotacionError } from './errors.ts'
 import { candidateId, identity, paginate, reconcile } from './model.ts'
-import { readCandidateContacts, readSource } from './source.ts'
+import { readSourceSnapshot } from './source.ts'
+import { readSavedSource, savedCandidateContacts, saveSource } from './snapshot.ts'
+import type { SourceRow } from './model.ts'
 import { assertAdmin, readDirectory } from './supabase.ts'
 import type { DotacionFilters } from '../../src/types/dotacion.ts'
 
@@ -32,8 +34,16 @@ async function requestBody(req: IncomingMessage & { body?: unknown }): Promise<u
   }
   try { return JSON.parse(body || '{}') } catch { throw new DotacionError(400, 'body', 'La solicitud no es válida.') }
 }
-export const dependencies = { assertAdmin, readDirectory, readSource, readCandidateContacts }
-export function createDotacionHandler(deps = dependencies, env = process.env) {
+type SourceResult = { rows: SourceRow[]; warnings: string[]; coverage?: string[]; syncedAt?: string }
+export const dependencies = { assertAdmin, readDirectory, readSource: readSavedSource as (keys: string[], env: NodeJS.ProcessEnv, adminId: string) => Promise<SourceResult>, readCandidateContacts: savedCandidateContacts,
+  refresh: async (keys: string[], env: NodeJS.ProcessEnv, adminId: string) => {
+    const startedAt = new Date().toISOString()
+    const source = await readSourceSnapshot(keys, env)
+    await saveSource(adminId, source, keys, startedAt, env)
+    return readSavedSource(keys, env, adminId)
+  } }
+type Dependencies = Omit<typeof dependencies, 'refresh'> & { refresh?: typeof dependencies.refresh }
+export function createDotacionHandler(deps: Dependencies = dependencies, env = process.env) {
   return async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
     res.setHeader('Cache-Control', 'private, no-store, max-age=0')
     res.setHeader('Vary', 'Authorization')
@@ -49,22 +59,26 @@ export function createDotacionHandler(deps = dependencies, env = process.env) {
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new DotacionError(400, 'body', 'La solicitud no es válida.')
       const input = body as Record<string, unknown>
       const contactsRequested = input.action === 'contacts'
-      if (input.action !== undefined && !contactsRequested) throw new DotacionError(400, 'action', 'La acción no es válida.')
+      const refreshRequested = input.action === 'refresh'
+      if (input.action !== undefined && !contactsRequested && !refreshRequested) throw new DotacionError(400, 'action', 'La acción no es válida.')
       if (contactsRequested && (typeof input.candidateId !== 'string' || !/^candidate-[a-f0-9]{32}$/.test(input.candidateId))) throw new DotacionError(400, 'candidate', 'El candidato no es válido.')
       const filters = contactsRequested ? null : parseFilters(body)
       const directory = await deps.readDirectory(adminId, env)
-      const source = await deps.readSource(directory.flatMap(person => person.identifier ? [person.identifier] : []), env)
+      const keys = directory.flatMap(person => identity(person.identifier) ? [identity(person.identifier)!] : [])
+      if (refreshRequested && !deps.refresh) throw new DotacionError(503, 'refresh_unavailable', 'La actualización no está disponible.')
+      const source = await (refreshRequested ? deps.refresh! : deps.readSource)(keys, env, adminId)
       const secret = env.DOTACION_ROW_KEY || env.SUPABASE_SERVICE_ROLE_KEY
       if (!secret) throw new DotacionError(503, 'configuration', 'Falta configurar la identificación privada de candidatos.')
-      const rows = reconcile(directory, source.rows, secret)
+      const rows = reconcile(directory, source.rows, secret, source.coverage)
       if (contactsRequested) {
         const candidate = rows.find(row => row.id === input.candidateId && row.status === 'candidate' && !row.personId)
         const key = candidate && source.rows.map(row => identity(row.identifier)).find(key => key && candidateId(key, secret) === candidate.id)
         if (!candidate || !key) throw new DotacionError(404, 'candidate_unavailable', 'El candidato ya no está disponible para incorporación. Actualizá el cruce.')
-        const contacts = await deps.readCandidateContacts(key, env)
-        res.statusCode = 200; res.end(JSON.stringify({ candidateId: candidate.id, contacts, consultedAt: new Date().toISOString() })); return
+        const contacts = await deps.readCandidateContacts(key, env, adminId)
+        res.statusCode = 200; res.end(JSON.stringify({ candidateId: candidate.id, contacts, consultedAt: source.syncedAt || new Date().toISOString() })); return
       }
       const result = paginate(rows, filters!, new Date().toISOString(), source.warnings)
+      if (source.syncedAt) { result.source = 'Padrón gerencial guardado en Supabase'; result.sourceUpdatedAt = source.syncedAt }
       res.statusCode = 200; res.end(JSON.stringify(result))
     } catch (cause) {
       const error = cause instanceof DotacionError ? cause : new DotacionError(500, 'internal', 'No pudimos completar el cruce online. No se modificó ningún registro.')

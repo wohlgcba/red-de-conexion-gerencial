@@ -17,4 +17,5 @@ async function request<T>(body: object, signal?: AbortSignal): Promise<T> {
   return result
 }
 export const getDotacionComparison = (filters: DotacionFilters, signal?: AbortSignal) => request<DotacionComparisonPage>(filters, signal)
+export const refreshDotacionSnapshot = () => request<DotacionComparisonPage>({ action: 'refresh' })
 export const getCandidateContacts = (candidateId: string, signal?: AbortSignal) => request<CandidateContacts>({ action: 'contacts', candidateId }, signal)

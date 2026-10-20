@@ -65,7 +65,7 @@ begin
   if not rcg_private.valid_link_key(key) then raise exception 'Revisá el CUIL/CUIT: debe tener 11 dígitos y un dígito verificador válido' using errcode='22023'; end if;
   if length(trim(coalesce(p_given,''))) not between 1 and 100 or length(trim(coalesce(p_family,''))) not between 1 and 100
     or length(trim(coalesce(p_role,''))) not between 1 and 200 or length(trim(coalesce(p_ministry,''))) not between 1 and 200
-    or length(trim(coalesce(p_reason,''))) not between 10 and 3000 then raise exception 'Completá los datos y una justificación de al menos 10 caracteres' using errcode='22023'; end if;
+    or length(trim(coalesce(p_reason,'')))>3000 then raise exception 'Completá nombre, apellido, cargo y organismo. El motivo es opcional y admite hasta 3000 caracteres.' using errcode='22023'; end if;
   perform pg_advisory_xact_lock(905319117);
   if exists(select 1 from red_conexion_gerencial.member_accounts where auth_user_id=actor)
     or exists(select 1 from red_conexion_gerencial.admin_users where user_id=actor and is_active) then
@@ -76,12 +76,30 @@ begin
   select p.id,p.version into pid,pv from red_conexion_gerencial.people p left join rcg_private.directory_link_keys k on k.person_id=p.id
     where lower(trim(p.email))=lower(trim(mail)) or k.link_key=key order by p.id limit 1;
   insert into rcg_private.admin_requests(kind,user_id,person_id,person_version,given_name,family_name,email,link_key,role,ministry,reason)
-    values('access',actor,pid,pv,trim(p_given),trim(p_family),mail,key,trim(p_role),trim(p_ministry),trim(p_reason)) returning id into rid;
+    values('access',actor,pid,pv,trim(p_given),trim(p_family),mail,key,trim(p_role),trim(p_ministry),trim(coalesce(p_reason,''))) returning id into rid;
   insert into rcg_private.admin_access_states(user_id,state) values(actor,'pending') on conflict(user_id) do update set state='pending',updated_at=now();
   perform rcg_private.admin_log(rid,pid,'created',p_reason,'{}',jsonb_build_object('kind','access')); return rid;
 end $$;
 
 -- The applicant can answer a clarification without editing the original proposal/evidence.
+create or replace function red_conexion_gerencial.submit_access_request_details(p_given text,p_family text,p_role text,p_ministry text,p_identifier text,p_reason text default '',p_secretariat text default '',p_directorate text default '')
+returns uuid language plpgsql security definer set search_path='' as $$
+declare rid uuid; previous uuid;
+begin
+  if length(trim(coalesce(p_secretariat,'')))>300 or length(trim(coalesce(p_directorate,'')))>300 then
+    raise exception 'Los datos institucionales superan el máximo permitido' using errcode='22023'; end if;
+  perform pg_advisory_xact_lock(905319117);
+  select id into previous from rcg_private.admin_requests where user_id=auth.uid() and kind='access' and status in ('pending','reviewing','information') limit 1;
+  rid:=red_conexion_gerencial.submit_access_request(p_given,p_family,p_role,p_ministry,p_identifier,p_reason);
+  if previous is null then
+    update rcg_private.admin_requests set secretariat=trim(coalesce(p_secretariat,'')),directorate=trim(coalesce(p_directorate,'')) where id=rid;
+    perform rcg_private.admin_log(rid,null,'institutional_details','Datos declarados por el solicitante','{}',jsonb_build_object('secretariat',trim(coalesce(p_secretariat,'')),'directorate',trim(coalesce(p_directorate,''))));
+  end if;
+  return rid;
+end $$;
+revoke all on function red_conexion_gerencial.submit_access_request_details(text,text,text,text,text,text,text,text) from public,anon,service_role;
+grant execute on function red_conexion_gerencial.submit_access_request_details(text,text,text,text,text,text,text,text) to authenticated;
+
 create or replace function red_conexion_gerencial.reply_to_my_request(p_id uuid,p_version integer,p_message text)
 returns void language plpgsql security definer set search_path='' as $$
 declare r rcg_private.admin_requests;

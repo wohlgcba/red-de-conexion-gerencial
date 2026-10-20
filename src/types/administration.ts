@@ -24,6 +24,7 @@ export interface AdminRequest {
   field: ChangeField | null; oldValue: string | null; newValue: string | null; reason: string
   reviewer: string | null; exceptionActive: boolean; exceptionReason: string | null
   validation: Validation
+  secretariat?: string; directorate?: string
 }
 export interface AdminAudit { id: string; action: string; actor: string; at: string; reason: string; before: Record<string, unknown>; after: Record<string, unknown> }
 export interface RelatedIdentity { id: string; name: string; email: string; role: string; ministry: string; active: boolean; identifier: string | null }

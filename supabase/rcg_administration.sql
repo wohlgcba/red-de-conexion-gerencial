@@ -15,6 +15,7 @@ create table if not exists rcg_private.admin_requests (
   person_id uuid references red_conexion_gerencial.people(id) on delete restrict,
   given_name text not null, family_name text not null, email text not null,
   link_key text, role text not null default '', ministry text not null default '',
+  secretariat text not null default '', directorate text not null default '',
   field text check (field in ('position_title','ministry','secretariat','directorate','email')),
   old_value text, new_value text, person_version integer,
   reason text not null default '', status text not null default 'pending'
@@ -26,6 +27,8 @@ create table if not exists rcg_private.admin_requests (
   exception_justification text, exception_approved_at timestamptz, exception_revoked_at timestamptz,
   check ((kind='access' and field is null) or (kind='change' and person_id is not null and field is not null and new_value is not null))
 );
+alter table rcg_private.admin_requests add column if not exists secretariat text not null default '';
+alter table rcg_private.admin_requests add column if not exists directorate text not null default '';
 create unique index if not exists admin_one_open_access on rcg_private.admin_requests(user_id)
   where kind='access' and status in ('pending','reviewing','information');
 create index if not exists admin_requests_queue on rcg_private.admin_requests(kind,status,created_at desc);
@@ -117,6 +120,10 @@ create or replace function rcg_private.admin_request_document(r rcg_private.admi
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare v jsonb:=rcg_private.admin_validation(r.link_key,r.email,r.person_id,r.user_id); actual text;
 begin
+  if r.kind='access' and v->>'evidence'='found' and not exists(
+    select 1 from jsonb_array_elements_text(v->'roles') x where rcg_private.admin_norm(trim(x.value))=rcg_private.admin_norm(trim(r.role))) then
+    v:=v || jsonb_build_object('reasons',(v->'reasons')||'"discrepancy"'::jsonb,'ordinary',false,'risk',case when v->>'risk'='high' then 'high' else 'medium' end);
+  end if;
   if r.kind='change' and r.field<>'email' then
     if r.field='position_title' then
       select value into actual from jsonb_array_elements_text(v->'roles')
@@ -127,7 +134,7 @@ begin
     end if;
   end if;
   return jsonb_build_object('id',r.id,'kind',r.kind,'personId',r.person_id,'name',trim(r.given_name||' '||r.family_name),
-    'email',r.email,'role',r.role,'ministry',r.ministry,'status',r.status,'version',r.version,'createdAt',r.created_at,
+    'email',r.email,'role',r.role,'ministry',r.ministry,'secretariat',r.secretariat,'directorate',r.directorate,'status',r.status,'version',r.version,'createdAt',r.created_at,
     'updatedAt',r.updated_at,'field',r.field,'oldValue',r.old_value,'newValue',r.new_value,'reason',r.reason,
     'reviewer',(select email from auth.users where id=r.reviewed_by),'exceptionActive',r.exception_active,
     'exceptionReason',r.exception_reason,'validation',v);
@@ -233,8 +240,8 @@ begin
         raise exception 'La cuenta de autenticación debe existir y tener el correo confirmado' using errcode='22023'; end if;
       target:=r.person_id;
       if target is null then
-        insert into red_conexion_gerencial.people(given_name,family_name,position_title,ministry,email,phone,source_sheet,source_row)
-          values(r.given_name,r.family_name,coalesce(nullif(r.role,''),'Cargo pendiente de informar'),coalesce(nullif(r.ministry,''),'Organismo pendiente de informar'),lower(trim(r.email)),'','Solicitud administrativa',null) returning id into target;
+        insert into red_conexion_gerencial.people(given_name,family_name,position_title,ministry,secretariat,directorate,email,phone,source_sheet,source_row)
+          values(r.given_name,r.family_name,coalesce(nullif(r.role,''),'Cargo pendiente de informar'),coalesce(nullif(r.ministry,''),'Organismo pendiente de informar'),r.secretariat,r.directorate,lower(trim(r.email)),'','Solicitud administrativa',null) returning id into target;
       else
         select * into p from red_conexion_gerencial.people where id=target for update;
         if p.version is distinct from r.person_version or lower(trim(p.email))<>lower(trim(r.email)) then raise exception 'El perfil cambió; revisá su identidad' using errcode='40001'; end if;

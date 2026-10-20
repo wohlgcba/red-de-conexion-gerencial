@@ -60,25 +60,28 @@ async function withSource<T>(env: NodeJS.ProcessEnv, connect: typeof mysql.creat
   } finally { connection?.destroy() }
 }
 
-export async function readSource(keys: string[], env: NodeJS.ProcessEnv, connect: typeof mysql.createConnection = mysql.createConnection): Promise<{ rows: SourceRow[]; warnings: string[] }> {
+export async function readSource(keys: string[], env: NodeJS.ProcessEnv, connect: typeof mysql.createConnection = mysql.createConnection, includeContacts = false): Promise<{ rows: (SourceRow & { contacts?: CandidateContact[] })[]; warnings: string[] }> {
   return withSource(env, connect, async (connection, table, columns) => {
     const col = (name: string) => identifier(columns.get(name)!)
+    const fields = includeContacts ? CONTACT_FIELDS.filter(field => columns.has(field.name)) : []
     const projection = REQUIRED.map((name, index) => `${col(name)} AS ${identifier(['identifier', 'name', 'ministry', 'role', 'unit'][index])}`).join(', ')
       + (columns.has('PATH_NOMBRES') ? `, ${col('PATH_NOMBRES')} AS path` : ', NULL AS path')
-    // Contact fields are excluded from lists and read separately for one candidate.
-    const rows: SourceRow[] = []
+      + fields.map(field => `, ${col(field.name)} AS ${identifier(field.name)}`).join('')
+    // Only an explicit snapshot refresh includes this allowlist, never general list responses.
+    const mapRow = (row: RowDataPacket) => ({ ...toRow(row), ...(includeContacts ? { contacts: sanitizeContacts([row], fields) } : {}) })
+    const rows: (SourceRow & { contacts?: CandidateContact[] })[] = []
     const uniqueKeys = [...new Set(keys.map(identity).filter((key): key is string => !!key))]
     for (let start = 0; start < uniqueKeys.length; start += 150) {
       const batch = uniqueKeys.slice(start, start + 150)
       const [found] = await connection.execute<RowDataPacket[]>({ sql: `SELECT DISTINCT ${projection} FROM ${table} WHERE ${col('CUIL_SIN_GUIONES')} IN (${batch.map(() => '?').join(',')}) LIMIT ${MAX_ASSIGNMENTS + 1}`, timeout: 10000 }, batch)
-      rows.push(...found.map(toRow))
+      rows.push(...found.map(mapRow))
       if (rows.length > MAX_ASSIGNMENTS) throw new DotacionError(503, 'limit', 'La fuente contiene demasiadas asignaciones para una conciliación completa. Requiere revisar la consulta.')
     }
     // Anchored role: excludes assistants/advisors whose title merely mentions a manager.
     const [managers] = await connection.query<RowDataPacket[]>({ sql: `SELECT DISTINCT ${projection} FROM ${table} WHERE UPPER(TRIM(${col('LIT_PUESTO')})) REGEXP '^(SUB)?GERENT[EA]([[:space:]]|$)' LIMIT ${MAX_MANAGERS + 1}`, timeout: 10000 })
     if (managers.length > MAX_MANAGERS) throw new DotacionError(503, 'limit', 'La consulta de cargos gerenciales superó el límite previsto. No se muestran resultados parciales.')
     if (!managers.length) throw new DotacionError(503, 'source_updating', 'La fuente todavía no contiene cargos gerenciales identificables. Reintentá al finalizar su actualización; no se muestran ausencias basadas en una carga incompleta.')
-    const all = [...rows, ...managers.map(toRow)]
+    const all = [...rows, ...managers.map(mapRow)]
     const invalid = managers.filter(row => !identity(row.identifier)).length
     const warnings: string[] = []
     if (!columns.has('PATH_NOMBRES')) warnings.push('La fuente no ofrece PATH_NOMBRES. Se compara cargo, organismo y repartición; no se inventan niveles institucionales.')
@@ -86,6 +89,8 @@ export async function readSource(keys: string[], env: NodeJS.ProcessEnv, connect
     return { rows: all, warnings }
   })
 }
+
+export const readSourceSnapshot = (keys: string[], env: NodeJS.ProcessEnv) => readSource(keys, env, mysql.createConnection, true)
 
 export async function readCandidateContacts(key: string, env: NodeJS.ProcessEnv, connect: typeof mysql.createConnection = mysql.createConnection): Promise<CandidateContact[]> {
   if (!identity(key)) throw new DotacionError(404, 'candidate_unavailable', 'No encontramos un candidato con identidad verificada.')
@@ -98,4 +103,5 @@ export async function readCandidateContacts(key: string, env: NodeJS.ProcessEnv,
     return sanitizeContacts(rows, fields)
   })
 }
+
 const toRow = (row: RowDataPacket): SourceRow => ({ identifier: String(row.identifier ?? ''), name: String(row.name ?? ''), role: String(row.role ?? ''), ministry: String(row.ministry ?? ''), unit: String(row.unit ?? ''), path: row.path == null ? null : String(row.path) })

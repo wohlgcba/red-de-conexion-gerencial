@@ -107,6 +107,20 @@ test('API verifies admin before any source access, returns only safe DTOs and fa
   const safe=await unavailable.json();assert.ok(!JSON.stringify(safe).includes(key(1)));assert.equal(safe.rows,undefined)
 })
 
+test('saved comparison and contacts never refresh MySQL implicitly; failed refresh preserves reading',async t=>{
+  let refreshCalls=0,reads=0
+  const handler=createDotacionHandler({assertAdmin:async()=> 'admin',readDirectory:async()=>[person(1)],
+    readSource:async()=>{reads++;return {rows:[row(1),row(2)],coverage:[key(1)],warnings:[],syncedAt:'2026-10-20T12:00:00Z'}},
+    readCandidateContacts:async()=>[],refresh:async()=>{refreshCalls++;throw new DotacionError(503,'source_unavailable','MySQL no disponible; padrón anterior conservado.')}
+  },{DOTACION_ROW_KEY:'secret'})
+  const server=createServer(handler);await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>server.close())
+  const request=(body={})=>fetch(`http://127.0.0.1:${server.address().port}`,{method:'POST',headers:{Authorization:'Bearer admin','Content-Type':'application/json'},body:JSON.stringify(body)})
+  const cached=await (await request()).json();assert.equal(cached.counts.candidate,1);assert.equal(cached.sourceUpdatedAt,'2026-10-20T12:00:00Z');assert.equal(refreshCalls,0)
+  assert.equal((await request({action:'contacts',candidateId:candidateId(key(2),'secret')})).status,200);assert.equal(refreshCalls,0)
+  assert.equal((await request({action:'refresh'})).status,503);assert.equal(refreshCalls,1)
+  assert.equal((await (await request()).json()).counts.candidate,1);assert.equal(reads,3);assert.equal(refreshCalls,1)
+})
+
 test('candidate contacts prioritize work mail, deduplicate sources and reject invalid data', () => {
   const rows=[{MAIL_LABORAL:'WORK@example.test; work@example.test',MAIL_MIA:'work@example.test',MAIL_PERSONAL:'personal@example.test',TELEFONO:'(11) 4444-5555',FEC_NACIM:'not-allowed'},
     {MAIL_LABORAL:'javascript:alert(1)',MAIL_PERSONAL:'invalid text',CELULAR:'00000000'}]

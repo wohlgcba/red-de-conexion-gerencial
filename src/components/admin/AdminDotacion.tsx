@@ -8,7 +8,7 @@ import { DirectoryProfileModal } from '../directory/DirectoryProfileModal'
 import { AdminBadge, AdminLoadState, AdminPagination } from './AdminPrimitives'
 import { useAdminQuery } from './useAdminQuery'
 import { AdminCandidateContacts } from './AdminCandidateContacts'
-import { getDotacionComparison } from '../../services/dotacion'
+import { getDotacionComparison, refreshDotacionSnapshot } from '../../services/dotacion'
 import type { DotacionComparison, DotacionFilters, DotacionStatus, InstitutionalAssignment } from '../../types/dotacion'
 import './dotacion.css'
 
@@ -45,10 +45,22 @@ export function AdminDotacion({ onReview }: { onReview: (name: string) => void }
   const closeProfile = useCallback(() => setProfileId(null), [])
   const profile = people.find(person => person.id === profileId)
   const change = <K extends keyof DotacionFilters>(key: K, value: DotacionFilters[K]) => { setSelected(null); setFilters(previous => ({ ...previous, [key]: value, page: key === 'page' ? Number(value) : 1 })) }
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState('')
+  const refreshLock = useRef(false)
+  const refresh = async () => {
+    if (refreshLock.current) return
+    refreshLock.current = true; setRefreshing(true); setRefreshError(''); setSelected(null)
+    try { await refreshDotacionSnapshot(); query.reload() }
+    catch (cause) { setRefreshError(cause instanceof Error ? cause.message : 'No pudimos confirmar la actualización. Revisá la fecha del padrón.'); query.reload() }
+    finally { refreshLock.current = false; setRefreshing(false) }
+  }
   const data = query.data
   return <Surface className="administration-members dotacion-online">
-    <div className="administration-section-heading"><div><h2>Cruce online con Dotación</h2><p>Integrantes de la Red y cargos gerenciales sin coincidencia en el Directorio. La consulta no modifica perfiles ni accesos.</p></div><Button onClick={() => { setSelected(null); query.reload() }} disabled={query.loading}><RefreshCw size={16} className={query.loading ? 'dotacion-refreshing' : ''} /> Actualizar cruce</Button></div>
-    <p className="dotacion-source"><Database size={16} /> {query.loading ? 'Consultando las fuentes online…' : data ? `${data.source} · consultado ${new Date(data.consultedAt).toLocaleString('es-AR')}` : 'Consulta online no disponible'}</p>
+    <div className="administration-section-heading"><div><h2>Cruce con Dotación</h2><p>Integrantes de la Red y cargos gerenciales sin coincidencia en el Directorio. La consulta no modifica perfiles ni accesos.</p></div><Button onClick={() => void refresh()} disabled={refreshing}><RefreshCw size={16} className={refreshing ? 'dotacion-refreshing' : ''} /> {refreshing ? 'Actualizando padrón…' : 'Actualizar desde Dotación'}</Button></div>
+    <p className="dotacion-source"><Database size={16} /> {query.loading ? 'Consultando el padrón guardado…' : data ? `${data.source} · ${data.sourceUpdatedAt ? 'actualizado ' + new Date(data.sourceUpdatedAt).toLocaleString('es-AR') : 'fecha no disponible'}` : 'Padrón guardado no disponible'}</p>
+    {refreshError && <p role="alert" className="administration-warning">{refreshError}</p>}
+    {refreshing && <p role="status">Leyendo únicamente gerentes, subgerentes y coincidencias del Directorio. Podés seguir consultando el padrón anterior.</p>}
     <div className="dotacion-summary" aria-label="Resumen del cruce">{([
       { key: 'directory', label: 'Integrantes del Directorio', icon: ShieldCheck, action: () => setFilters({ ...EMPTY, membership: 'directory' }) },
       { key: 'changed', label: 'Cambios de cargo o área', icon: ArrowRightLeft, action: () => setFilters({ ...EMPTY, status: 'changed' }) },
@@ -63,7 +75,7 @@ export function AdminDotacion({ onReview }: { onReview: (name: string) => void }
       <label className="dotacion-exception-filter"><input type="checkbox" checked={filters.exceptionsOnly} onChange={event => change('exceptionsOnly', event.target.checked)} /> Solo excepciones vigentes</label>
       <Button onClick={() => { setSelected(null); setFilters({ ...EMPTY }) }}>Limpiar filtros</Button>
     </div>
-    {query.loading || query.error ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Consultando Directorio y Dotación…" errorTitle="No pudimos completar el cruce online" /> : data && <>
+    {query.loading || query.error ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Consultando Directorio y padrón guardado…" errorTitle="No pudimos consultar el padr?n guardado" /> : data && <>
       {data.warnings.map(warning => <p className="administration-warning" key={warning}><Info size={15} /> {warning}</p>)}
       <div className="administration-results-meta"><p role="status">{data.total} resultados · {data.counts.other_role} con otros puestos · {data.counts.exceptions} excepciones vigentes</p></div>
       {data.rows.length ? <div className="administration-table-scroll" tabIndex={0} role="region" aria-label="Comparación del Directorio con Dotación"><table className="administration-table dotacion-table"><thead><tr><th>Persona / Pertenencia</th><th>Registrado en el Directorio</th><th>Actual en Dotación</th><th>Resultado</th><th>Acciones</th></tr></thead><tbody>{data.rows.map(row => <tr key={row.id} className={row.personId ? '' : 'dotacion-candidate'}>
@@ -75,12 +87,12 @@ export function AdminDotacion({ onReview }: { onReview: (name: string) => void }
       </tr>)}</tbody></table></div> : <div className="administration-empty"><SearchX size={30} /><h2>No encontramos resultados con estos filtros.</h2><Button onClick={() => setFilters({ ...EMPTY })}>Limpiar filtros</Button></div>}
       <AdminPagination page={data.page} total={data.total} size={data.pageSize} onPage={page => change('page', page)} onSize={size => change('pageSize', size)} />
     </>}
-    <p className="administration-source-note"><Info size={17} /><span>Dotación permanece en su servidor. El cruce usa identificadores técnicos privados y compara los datos registrados en la Red con la fuente actual; no reconstruye movimientos históricos. Una excepción vigente se conserva aunque cambie el cargo. Las aprobaciones de solicitudes mantienen su circuito administrativo.</span></p>
-    {selected && <DirectoryDialog title="Detalle del cruce online" onClose={close} footer={<><Button onClick={close}>Cerrar</Button>{selected.personId && <Button variant="primary" onClick={() => { close(); onReview(selected.name) }}>Revisión administrativa</Button>}{selected.personId && people.some(person => person.id === selected.personId) && <Button onClick={() => { setProfileId(selected.personId); close() }}>Ver perfil</Button>}</>}>
+    <p className="administration-source-note"><Info size={17} /><span>Se guarda únicamente el padrón gerencial y las coincidencias necesarias del Directorio, con contactos reservados para administración. Abrir esta vista no consulta MySQL. La fecha indica la última lectura; usá «Actualizar desde Dotación» para renovarla. Una excepción vigente se conserva aunque cambie el cargo. Las aprobaciones mantienen su revisión administrativa.</span></p>
+    {selected && <DirectoryDialog title="Detalle del cruce" onClose={close} footer={<><Button onClick={close}>Cerrar</Button>{selected.personId && <Button variant="primary" onClick={() => { close(); onReview(selected.name) }}>Revisión administrativa</Button>}{selected.personId && people.some(person => person.id === selected.personId) && <Button onClick={() => { setProfileId(selected.personId); close() }}>Ver perfil</Button>}</>}>
       <div className="dotacion-detail-heading"><Avatar name={selected.name} size={48} /><div><h2>{selected.name}</h2><Status value={selected.status} /></div></div>
       {selected.note && <p className="administration-warning">{selected.note}</p>}
       {selected.exceptionActive && <section className="administration-detail-section"><h3>Excepción vigente</h3><p>{selected.exceptionJustification || 'Aprobación administrativa registrada. Consultá la revisión del integrante para ver su historial.'}</p></section>}
-      <div className="dotacion-detail-columns"><section><h3>Registrado en el Directorio</h3>{selected.directory ? <Assignment value={selected.directory} detailed /> : <p>Sin perfil registrado. La candidatura no crea una cuenta ni habilita acceso.</p>}</section><section><h3>Actual en Dotación</h3>{selected.current.length ? selected.current.map((item, index) => <div className="dotacion-detail-assignment" key={index}><h4>Asignación {index + 1}</h4><Assignment value={item} detailed /></div>) : <p>{selected.status === 'missing' ? 'La consulta online terminó correctamente y no encontró coincidencias para el identificador verificado.' : 'No hay información suficiente para realizar una vinculación confiable.'}</p>}</section></div>
+      <div className="dotacion-detail-columns"><section><h3>Registrado en el Directorio</h3>{selected.directory ? <Assignment value={selected.directory} detailed /> : <p>Sin perfil registrado. La candidatura no crea una cuenta ni habilita acceso.</p>}</section><section><h3>Actual en Dotación</h3>{selected.current.length ? selected.current.map((item, index) => <div className="dotacion-detail-assignment" key={index}><h4>Asignación {index + 1}</h4><Assignment value={item} detailed /></div>) : <p>{selected.status === 'missing' ? 'La última lectura no encontró coincidencias para el identificador verificado. Revisá la fecha del padrón guardado.' : 'No hay información suficiente para realizar una vinculación confiable.'}</p>}</section></div>
       {selected.status === 'candidate' && !selected.personId && <AdminCandidateContacts key={selected.id} id={selected.id} name={selected.name} />}
       <p className="administration-disclaimer">Consulta de solo lectura. Ninguna diferencia modifica automáticamente datos, excepciones ni permisos.</p>
     </DirectoryDialog>}

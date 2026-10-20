@@ -24,9 +24,9 @@ function CandidateContactsContent({ id, name }: { id: string; name: string }) {
   const query = useAdminQuery(load)
   const [chosenEmail, setChosenEmail] = useState('')
   const [copyMessage, setCopyMessage] = useState('')
-  if (query.loading) return <p className="dotacion-contact-status" role="status">Consultando contactos en Dotación…</p>
+  if (query.loading) return <p className="dotacion-contact-status" role="status">Consultando contactos del padrón guardado…</p>
   if (query.error) return <div className="dotacion-contact-error" role="alert"><p>{query.error.message}</p><Button onClick={query.reload}><RefreshCw size={15} /> Reintentar contacto</Button></div>
-  if (!query.data?.contacts.length) return <p className="dotacion-contact-status" role="status">Dotación no tiene un correo o teléfono válido informado para este candidato.</p>
+  if (!query.data?.contacts.length) return <p className="dotacion-contact-status" role="status">El padrón guardado no tiene un correo o teléfono válido informado para este candidato.</p>
   const emails = query.data.contacts.filter(contact => contact.kind === 'email')
   const selected = emails.find(contact => contact.value === chosenEmail)?.value || emails[0]?.value
   const invitation = candidateInvitation(name, window.location.origin)
@@ -46,6 +46,6 @@ function CandidateContactsContent({ id, name }: { id: string; name: string }) {
       <p className="dotacion-contact-note">Se abrirá tu correo para revisar y enviar el mensaje. El enlace permite solicitar el ingreso; no habilita acceso automáticamente.</p>
       {copyMessage && <p role="status" className="dotacion-contact-status">{copyMessage}</p>}
     </div> : <p className="dotacion-contact-status">No hay un correo válido para preparar la invitación.</p>}
-    <p className="dotacion-contact-note">Contactos de Dotación visibles únicamente para administradores. Consultados {new Date(query.data.consultedAt).toLocaleString('es-AR')}.</p>
+    <p className="dotacion-contact-note">Contactos visibles únicamente para administradores. Última lectura de Dotación: {new Date(query.data.consultedAt).toLocaleString('es-AR')}.</p>
   </>
 }

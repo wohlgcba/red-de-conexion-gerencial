@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto'
 import type { DotacionComparison, DotacionComparisonPage, DotacionFilters, DotacionStatus, InstitutionalAssignment } from '../../src/types/dotacion.ts'
+import { intakeIdentifier } from '../../src/utils/intakeIdentity.ts'
 
 export interface DirectoryEntry {
   id: string
@@ -24,11 +25,7 @@ export interface SourceRow {
 
 export const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 export function identity(value: unknown): string | null {
-  const key = String(value ?? '').trim().replace(/[\s-]/g, '')
-  if (!/^\d{11}$/.test(key) || /^(\d)\1+$/.test(key)) return null
-  const remainder = 11 - [5, 4, 3, 2, 7, 6, 5, 4, 3, 2].reduce((sum, weight, index) => sum + Number(key[index]) * weight, 0) % 11
-  const check = remainder === 11 ? 0 : remainder === 10 ? 9 : remainder
-  return Number(key[10]) === check ? key : null
+  return intakeIdentifier(String(value ?? ''))
 }
 export const isManager = (role: string) => /^(sub)?gerent[ea](?:\s|$)/.test(normalize(role))
 export const candidateId = (key: string, secret: string) => 'candidate-' + createHmac('sha256', secret).update(key).digest('hex').slice(0, 32)
@@ -58,7 +55,8 @@ function differences(old: InstitutionalAssignment, current: InstitutionalAssignm
   return fields.filter(([field]) => old[field].trim() && current.every(item => item[field].trim() && !comparable(field, old[field], item[field]))).map(([, label]) => label)
 }
 
-export function reconcile(directory: DirectoryEntry[], source: SourceRow[], secret: string): DotacionComparison[] {
+export function reconcile(directory: DirectoryEntry[], source: SourceRow[], secret: string, coverage?: string[]): DotacionComparison[] {
+  const checked = coverage ? new Set(coverage) : null
   const people = new Map<string, DirectoryEntry[]>()
   let incompleteDirectory = false
   for (const person of directory) {
@@ -80,6 +78,7 @@ export function reconcile(directory: DirectoryEntry[], source: SourceRow[], secr
     let status: DotacionStatus = 'unchanged'
     let note: string | null = null
     if (!key || people.get(key)!.length > 1) { status = 'pending'; note = key ? 'Identidad vinculada a más de un perfil; requiere revisión.' : 'Falta un identificador válido y verificado para consultar.' }
+    else if (!current.length && checked && !checked.has(key)) { status = 'pending'; note = 'Este perfil se incorporó después de la última actualización. Actualizá el padrón para verificarlo.' }
     else if (!current.length) status = 'missing'
     else if (current.some(item => !item.role.trim())) { status = 'pending'; note = 'Dotación contiene asignaciones sin cargo informado.' }
     else if (!current.some(item => isManager(item.role))) status = 'other_role'
