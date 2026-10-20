@@ -2,9 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
-import { reconcile, paginate, identity, isManager, assignment } from '../server/dotacion/model.ts'
+import { candidateId, reconcile, paginate, identity, isManager, assignment } from '../server/dotacion/model.ts'
 import { parseFilters, createDotacionHandler } from '../server/dotacion/handler.ts'
-import { connectionOptions, readSource } from '../server/dotacion/source.ts'
+import { connectionOptions, readCandidateContacts, readSource } from '../server/dotacion/source.ts'
+import { CONTACT_FIELDS, sanitizeContacts } from '../server/dotacion/contacts.ts'
+import { candidateInvitation, invitationMailto } from '../src/utils/candidateInvitation.ts'
 import { DotacionError } from '../server/dotacion/errors.ts'
 import { assertAdmin } from '../server/dotacion/supabase.ts'
 import { rootCertificates } from 'node:tls'
@@ -68,11 +70,12 @@ test('manager classification, hierarchy availability, TLS and filter bounds', ()
 })
 
 test('API verifies admin before any source access, returns only safe DTOs and fails closed', async t => {
-  let accesses=0,sourceCalls=0,failed=false
+  let accesses=0,sourceCalls=0,contactCalls=0,failed=false,alreadyMember=false
   const handler=createDotacionHandler({
     assertAdmin:async token => { accesses++; if(token!=='admin') throw new DotacionError(403,'forbidden','Acceso administrativo requerido'); return 'admin-id' },
-    readDirectory:async()=>[person(1)],
+    readDirectory:async()=>alreadyMember?[person(1),person(2)]:[person(1)],
     readSource:async()=> {sourceCalls++;if(failed)throw new Error('Sensitive database error '+key(1));return {rows:[row(1),row(2)],warnings:[]} },
+    readCandidateContacts:async identifier=>{contactCalls++;assert.equal(identifier,key(2));return [{kind:'email',label:'Correo laboral',value:'candidate@example.test',sourceField:'MAIL_LABORAL'}]},
   },{DOTACION_ROW_KEY:'synthetic-secret'})
   const server=createServer(handler);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>server.close())
   const url=`http://127.0.0.1:${server.address().port}/api/admin-dotacion`
@@ -88,10 +91,69 @@ test('API verifies admin before any source access, returns only safe DTOs and fa
   const ok=await request('admin');assert.equal(ok.status,200)
   assert.equal(ok.headers.get('cache-control'),'private, no-store, max-age=0')
   const data=await ok.json();assert.equal(data.total,2);assert.equal(data.counts.candidate,1)
+  assert.equal(contactCalls,0);assert.ok(!JSON.stringify(data).includes('candidate@example.test'))
   assert.ok(!JSON.stringify(data).includes(key(1)));assert.ok(!JSON.stringify(data).includes(key(2)))
+  const contactBody=JSON.stringify({action:'contacts',candidateId:candidateId(key(2),'synthetic-secret')})
+  assert.equal((await request('member',contactBody)).status,403);assert.equal(contactCalls,0)
+  assert.equal((await request('admin',JSON.stringify({action:'contacts',candidateId:key(2)}))).status,400);assert.equal(contactCalls,0)
+  assert.equal((await request('admin',JSON.stringify({action:'contacts',candidateId:candidateId(key(99),'synthetic-secret')}))).status,404);assert.equal(contactCalls,0)
+  const contactResponse=await request('admin',contactBody);assert.equal(contactResponse.status,200)
+  assert.equal(contactResponse.headers.get('cache-control'),'private, no-store, max-age=0')
+  const contactData=await contactResponse.json();assert.equal(contactData.contacts[0].value,'candidate@example.test')
+  assert.ok(!JSON.stringify(contactData).includes(key(2)));assert.equal(contactCalls,1)
+  alreadyMember=true;assert.equal((await request('admin',contactBody)).status,404);assert.equal(contactCalls,1,'no candidate contact if already added to Directory')
   failed=true
   const unavailable=await request('admin');assert.equal(unavailable.status,500)
   const safe=await unavailable.json();assert.ok(!JSON.stringify(safe).includes(key(1)));assert.equal(safe.rows,undefined)
+})
+
+test('candidate contacts prioritize work mail, deduplicate sources and reject invalid data', () => {
+  const rows=[{MAIL_LABORAL:'WORK@example.test; work@example.test',MAIL_MIA:'work@example.test',MAIL_PERSONAL:'personal@example.test',TELEFONO:'(11) 4444-5555',FEC_NACIM:'not-allowed'},
+    {MAIL_LABORAL:'javascript:alert(1)',MAIL_PERSONAL:'invalid text',CELULAR:'00000000'}]
+  const contacts=sanitizeContacts(rows,[...CONTACT_FIELDS])
+  assert.deepEqual(contacts.map(x=>x.value),['work@example.test','personal@example.test','(11) 4444-5555'])
+  assert.equal(contacts[0].label,'Correo laboral');assert.equal(contacts[1].label,'Correo personal')
+  assert.ok(!JSON.stringify(contacts).includes('FEC_NACIM'))
+  assert.deepEqual(sanitizeContacts([{MAIL_LABORAL:null,MAIL_PERSONAL:'nan',TELEFONO:'No informado'}],[...CONTACT_FIELDS]),[])
+})
+
+test('invitation uses the existing intake form and composes mail without sending or bypassing approval', () => {
+  const invitation=candidateInvitation('Persona Ejemplo','https://red.example.test')
+  assert.equal(invitation.formUrl,'https://red.example.test/solicitar-acceso')
+  assert.ok(invitation.body.includes('Persona Ejemplo'))
+  assert.ok(invitation.body.includes('contraseña actual'))
+  assert.ok(invitation.body.includes('revisada por la administración'))
+  const url=new URL(invitationMailto('work@example.test',invitation))
+  assert.equal(url.protocol,'mailto:');assert.equal(decodeURIComponent(url.pathname),'work@example.test')
+  assert.equal(url.searchParams.get('body'),invitation.body)
+  assert.equal(url.searchParams.get('subject'),invitation.subject)
+  assert.ok(!invitation.formUrl.includes('?'),'no identity or automatic-access token in public invitation')
+})
+
+test('candidate contact SQL selects only available contact fields for exactly one validated key',async()=>{
+  const calls=[];let closed=false
+  const fake={
+    query:async options=>{
+      calls.push(options)
+      if(options.sql.startsWith('SHOW SESSION'))return [[{Value:'TLS_AES_256_GCM_SHA384'}]]
+      if(options.sql.startsWith('SHOW COLUMNS'))return [[...['CUIL_SIN_GUIONES','AYN','MINISTERIO','LIT_PUESTO','DESC_REP','MAIL_LABORAL','MAIL_PERSONAL'].map(Field=>({Field}))]]
+      if(options.sql.startsWith('SELECT COUNT'))return [[{total:200000}]]
+      return [[]]
+    },
+    execute:async(options,values)=>{calls.push({...options,values});return [options.sql.startsWith('SELECT ENGINE')?[{engine:'InnoDB'}]:[{MAIL_LABORAL:'work@example.test',MAIL_PERSONAL:null}]]},
+    commit:async()=>{},destroy:()=>{closed=true},
+  }
+  const env={DOTACION_DB_HOST:'localhost',DOTACION_DB_USER:'read_only',DOTACION_DB_PASSWORD:'synthetic',DOTACION_DB_NAME:'test'}
+  const result=await readCandidateContacts(key(2),env,async()=>fake)
+  assert.equal(result[0].value,'work@example.test');assert.equal(closed,true)
+  const query=calls.find(x=>x.sql.startsWith('SELECT DISTINCT'))
+  assert.deepEqual(query.values,[key(2)]);assert.ok(query.sql.includes(' = ? AND '))
+  assert.ok(query.sql.includes('MAIL_LABORAL'));assert.ok(!query.sql.includes('MAIL_MIA'))
+  assert.ok(!/FEC_NACIM|INGRESO|SELECT \*|AYN/.test(query.sql))
+  assert.ok(!query.sql.includes(key(2)))
+  let connected=false
+  await assert.rejects(()=>readCandidateContacts('invalid',env,async()=>{connected=true;return fake}),{code:'candidate_unavailable'})
+  assert.equal(connected,false)
 })
 
 test('Supabase authorization checks the remote session and actual admin RPC', async t => {

@@ -7,6 +7,7 @@ import { DirectoryDialog } from '../directory/DirectoryDialog'
 import { DirectoryProfileModal } from '../directory/DirectoryProfileModal'
 import { AdminBadge, AdminLoadState, AdminPagination } from './AdminPrimitives'
 import { useAdminQuery } from './useAdminQuery'
+import { AdminCandidateContacts } from './AdminCandidateContacts'
 import { getDotacionComparison } from '../../services/dotacion'
 import type { DotacionComparison, DotacionFilters, DotacionStatus, InstitutionalAssignment } from '../../types/dotacion'
 import './dotacion.css'
@@ -80,6 +81,7 @@ export function AdminDotacion({ onReview }: { onReview: (name: string) => void }
       {selected.note && <p className="administration-warning">{selected.note}</p>}
       {selected.exceptionActive && <section className="administration-detail-section"><h3>Excepción vigente</h3><p>{selected.exceptionJustification || 'Aprobación administrativa registrada. Consultá la revisión del integrante para ver su historial.'}</p></section>}
       <div className="dotacion-detail-columns"><section><h3>Registrado en el Directorio</h3>{selected.directory ? <Assignment value={selected.directory} detailed /> : <p>Sin perfil registrado. La candidatura no crea una cuenta ni habilita acceso.</p>}</section><section><h3>Actual en Dotación</h3>{selected.current.length ? selected.current.map((item, index) => <div className="dotacion-detail-assignment" key={index}><h4>Asignación {index + 1}</h4><Assignment value={item} detailed /></div>) : <p>{selected.status === 'missing' ? 'La consulta online terminó correctamente y no encontró coincidencias para el identificador verificado.' : 'No hay información suficiente para realizar una vinculación confiable.'}</p>}</section></div>
+      {selected.status === 'candidate' && !selected.personId && <AdminCandidateContacts key={selected.id} id={selected.id} name={selected.name} />}
       <p className="administration-disclaimer">Consulta de solo lectura. Ninguna diferencia modifica automáticamente datos, excepciones ni permisos.</p>
     </DirectoryDialog>}
     {profile && <DirectoryProfileModal person={profile} onClose={closeProfile} />}

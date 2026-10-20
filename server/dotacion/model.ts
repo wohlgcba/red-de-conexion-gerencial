@@ -31,6 +31,7 @@ export function identity(value: unknown): string | null {
   return Number(key[10]) === check ? key : null
 }
 export const isManager = (role: string) => /^(sub)?gerent[ea](?:\s|$)/.test(normalize(role))
+export const candidateId = (key: string, secret: string) => 'candidate-' + createHmac('sha256', secret).update(key).digest('hex').slice(0, 32)
 
 // Read PATH only with a known delimiter. Never guess missing hierarchy from a title.
 export function assignment(row: SourceRow): InstitutionalAssignment {
@@ -92,7 +93,7 @@ export function reconcile(directory: DirectoryEntry[], source: SourceRow[], secr
   for (const [key, records] of grouped) {
     if (people.has(key) || !records.some(row => isManager(row.role))) continue
     const current = [...new Map(records.map(row => { const value = assignment(row); return [JSON.stringify(value), value] })).values()]
-    result.push({ id: 'candidate-' + createHmac('sha256', secret).update(key).digest('hex').slice(0, 32), personId: null,
+    result.push({ id: candidateId(key, secret), personId: null,
       name: displayName(records[0].name) || 'Nombre no informado', active: null, directory: null, current, status: 'candidate', changes: [],
       exceptionActive: false, exceptionJustification: null, membershipPending: incompleteDirectory,
       note: incompleteDirectory ? 'Sin coincidencia entre las identidades verificadas. Hay perfiles del Directorio sin identificador; confirmar pertenencia antes de incorporar.' : null })

@@ -43,3 +43,14 @@ export interface DotacionComparisonPage {
   sourceUpdatedAt: string | null
   warnings: string[]
 }
+export interface CandidateContact {
+  kind: 'email' | 'phone'
+  label: string
+  value: string
+  sourceField: string
+}
+export interface CandidateContacts {
+  candidateId: string
+  contacts: CandidateContact[]
+  consultedAt: string
+}

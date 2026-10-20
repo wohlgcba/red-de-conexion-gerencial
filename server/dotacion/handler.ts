@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DotacionError } from './errors.ts'
-import { paginate, reconcile } from './model.ts'
-import { readSource } from './source.ts'
+import { candidateId, identity, paginate, reconcile } from './model.ts'
+import { readCandidateContacts, readSource } from './source.ts'
 import { assertAdmin, readDirectory } from './supabase.ts'
 import type { DotacionFilters } from '../../src/types/dotacion.ts'
 
@@ -32,7 +32,7 @@ async function requestBody(req: IncomingMessage & { body?: unknown }): Promise<u
   }
   try { return JSON.parse(body || '{}') } catch { throw new DotacionError(400, 'body', 'La solicitud no es válida.') }
 }
-export const dependencies = { assertAdmin, readDirectory, readSource }
+export const dependencies = { assertAdmin, readDirectory, readSource, readCandidateContacts }
 export function createDotacionHandler(deps = dependencies, env = process.env) {
   return async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
     res.setHeader('Cache-Control', 'private, no-store, max-age=0')
@@ -45,13 +45,26 @@ export function createDotacionHandler(deps = dependencies, env = process.env) {
       const token = req.headers.authorization?.match(/^Bearer ([^\s]+)$/)?.[1]
       if (!token || token.length > 8192) throw new DotacionError(401, 'session', 'Ingresá con una cuenta administradora para consultar Dotación.')
       const adminId = await deps.assertAdmin(token, env)
-      const filters = parseFilters(await requestBody(req))
+      const body = await requestBody(req)
+      if (!body || typeof body !== 'object' || Array.isArray(body)) throw new DotacionError(400, 'body', 'La solicitud no es válida.')
+      const input = body as Record<string, unknown>
+      const contactsRequested = input.action === 'contacts'
+      if (input.action !== undefined && !contactsRequested) throw new DotacionError(400, 'action', 'La acción no es válida.')
+      if (contactsRequested && (typeof input.candidateId !== 'string' || !/^candidate-[a-f0-9]{32}$/.test(input.candidateId))) throw new DotacionError(400, 'candidate', 'El candidato no es válido.')
+      const filters = contactsRequested ? null : parseFilters(body)
       const directory = await deps.readDirectory(adminId, env)
       const source = await deps.readSource(directory.flatMap(person => person.identifier ? [person.identifier] : []), env)
       const secret = env.DOTACION_ROW_KEY || env.SUPABASE_SERVICE_ROLE_KEY
       if (!secret) throw new DotacionError(503, 'configuration', 'Falta configurar la identificación privada de candidatos.')
       const rows = reconcile(directory, source.rows, secret)
-      const result = paginate(rows, filters, new Date().toISOString(), source.warnings)
+      if (contactsRequested) {
+        const candidate = rows.find(row => row.id === input.candidateId && row.status === 'candidate' && !row.personId)
+        const key = candidate && source.rows.map(row => identity(row.identifier)).find(key => key && candidateId(key, secret) === candidate.id)
+        if (!candidate || !key) throw new DotacionError(404, 'candidate_unavailable', 'El candidato ya no está disponible para incorporación. Actualizá el cruce.')
+        const contacts = await deps.readCandidateContacts(key, env)
+        res.statusCode = 200; res.end(JSON.stringify({ candidateId: candidate.id, contacts, consultedAt: new Date().toISOString() })); return
+      }
+      const result = paginate(rows, filters!, new Date().toISOString(), source.warnings)
       res.statusCode = 200; res.end(JSON.stringify(result))
     } catch (cause) {
       const error = cause instanceof DotacionError ? cause : new DotacionError(500, 'internal', 'No pudimos completar el cruce online. No se modificó ningún registro.')
