@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Check, Clock3, FileCheck2, RefreshCw, ShieldCheck, X } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { Check, Clock3, FileCheck2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { Avatar } from '../common/Avatar'
 import { Button } from '../common/UI'
 import { DirectoryDialog } from '../directory/DirectoryDialog'
@@ -14,8 +14,6 @@ export function AdminRequestDetail({ id, revision, onClose, onChanged }: { id: s
   const load = useCallback(() => { void revision; return getAdminRequest(id) }, [id, revision])
   const query = useAdminQuery(load)
   const [action, setAction] = useState<AdminAction | null>(null)
-  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width:1100px)').matches)
-  useEffect(() => { const media = window.matchMedia('(max-width:1100px)'); const listener = () => setNarrow(media.matches); media.addEventListener('change', listener); return () => media.removeEventListener('change', listener) }, [])
   const detail = query.data
   const closeDecision = useCallback(() => setAction(null), [])
   const body = !detail ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} /> : <>
@@ -36,10 +34,10 @@ export function AdminRequestDetail({ id, revision, onClose, onChanged }: { id: s
       <Button disabled={detail.validation.authConflict || detail.validation.duplicateEmail + detail.validation.duplicateIdentifier > 0 || query.loading} onClick={() => setAction('exception')}>Aprobar como excepción</Button>
       <Button disabled={query.loading} onClick={() => setAction('information')}>Solicitar información</Button>
       <Button disabled={query.loading} className="administration-danger-outline" onClick={() => setAction('reject')}>Rechazar</Button>
-      <Button disabled={query.loading} onClick={() => setAction(detail.status === 'reviewing' ? 'pending' : 'review')}>{detail.status === 'reviewing' ? 'Mantener pendiente' : 'Marcar en revisión'}</Button>
-    </>}{detail.exceptionActive && <Button className="administration-danger-outline" onClick={() => setAction('revoke')}>Revocar excepción</Button>}<Button disabled={query.loading} onClick={query.reload}><RefreshCw size={15} /> Actualizar validación</Button></div>
+      <Button disabled={query.loading} title="Cambia el estado de seguimiento; no habilita el acceso." onClick={() => setAction(detail.status === 'reviewing' ? 'pending' : 'review')}>{detail.status === 'reviewing' ? 'Mantener pendiente' : 'Marcar en revisión'}</Button>
+    </>}{detail.exceptionActive && <Button className="administration-danger-outline" onClick={() => setAction('revoke')}>Revocar excepción</Button>}<Button disabled={query.loading} title="Recalcula las validaciones con la información guardada; no actualiza Dotación desde MySQL." onClick={query.reload}><RefreshCw size={15} /> Actualizar validación</Button></div>
     <p className="administration-disclaimer">Toda decisión queda registrada. Las validaciones se vuelven a comprobar en el servidor al confirmar.</p>
   </>
   if (action && detail) return <AdminDecisionDialog detail={detail} action={action} onClose={closeDecision} onRefresh={() => { setAction(null); query.reload(); onChanged(false) }} onConfirm={async (note, reason) => { await decideAdminRequest(detail.id, detail.version, action, note, reason); setAction(null); query.reload(); onChanged(true) }} />
-  return narrow ? <DirectoryDialog title="Revisión administrativa" className="administration-mobile-detail" onClose={onClose}>{body}</DirectoryDialog> : <aside className="surface administration-detail" aria-label="Detalle de la solicitud"><div className="administration-panel-close"><strong>Revisión administrativa</strong><button type="button" aria-label="Cerrar revisión" onClick={onClose}><X size={19} /></button></div>{body}</aside>
+  return <DirectoryDialog title="Revisión administrativa" titleIcon={<FileCheck2 size={22} />} className="administration-request-dialog" onClose={onClose} footer={<Button onClick={onClose}>Cerrar</Button>}>{body}</DirectoryDialog>
 }
