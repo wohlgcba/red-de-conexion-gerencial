@@ -5,5 +5,5 @@ insert into red_conexion_gerencial.member_accounts
 select p.id, u.id, true
 from red_conexion_gerencial.people p
 join auth.users u on lower(trim(u.email)) = lower(trim(p.email))
-where u.raw_app_meta_data ->> 'rcg_initial_cuit' = 'true'
+where u.raw_app_meta_data ->> 'rcg_initial_cuit' = 'true' and p.is_active
 on conflict do nothing;

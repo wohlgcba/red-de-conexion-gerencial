@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { requireSupabase } from '../lib/supabase'
@@ -15,16 +15,22 @@ function loginErrorMessage(error: unknown): string {
 }
 
 export function LoginPage() {
-  const [mode, setMode] = useState<'link' | 'password'>('link')
+  const [mode, setMode] = useState<'link' | 'password'>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(() => {
+    const callback = new URLSearchParams(window.location.hash.slice(1))
+    return callback.has('error') || callback.has('error_code') ? 'El enlace venció o no es válido. Ingresá tu correo y solicitá un enlace nuevo.' : ''
+  })
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false)
+  const lock = useRef(false)
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (lock.current) return
+    lock.current = true
     setBusy(true)
     setMessage('')
     setNeedsEmailVerification(false)
@@ -45,23 +51,26 @@ export function LoginPage() {
         setMessage('Primero tenés que verificar tu correo. Pedí el enlace de confirmación y abrilo desde tu casilla.')
       } else setMessage(loginErrorMessage(error))
     } finally {
+      lock.current = false
       setBusy(false)
     }
   }
 
   const sendEmail = async (type: 'verify' | 'reset') => {
+    if (lock.current) return
     if (!email.trim()) { setMessage('Ingresá tu correo electrónico primero.'); return }
+    lock.current = true
     setBusy(true)
     setMessage('')
     try {
       const client = requireSupabase()
       const result = type === 'verify'
         ? await client.auth.resend({ type: 'signup', email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/newsletters` } })
-        : await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/mi-cuenta` })
+        : await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/newsletters` })
       if (result.error) throw result.error
       setMessage(type === 'verify' ? 'Si tu cuenta está pendiente, recibirás un enlace de verificación.' : 'Si tu cuenta existe, recibirás un enlace para cambiar la contraseña.')
     } catch (error) { setMessage(loginErrorMessage(error)) }
-    finally { setBusy(false) }
+    finally { lock.current = false; setBusy(false) }
   }
 
   return <div className="auth-screen">
@@ -85,7 +94,7 @@ export function LoginPage() {
             </button>
           </span>
         </label>}
-        {mode === 'password' && <small>Cuentas creadas por la Red: primer ingreso con CUIT de 11 dígitos y luego cambio de contraseña. Si solicitaste ingreso desde el formulario, usá la contraseña que elegiste. Las cuentas existentes conservan su clave actual.</small>}
+        {mode === 'password' && <small>Si ya estás en el Directorio y la Red creó tu cuenta, el primer ingreso es con tu CUIT de 11 dígitos, sin guiones; después elegís una contraseña nueva. Si solicitaste ingreso, usá la contraseña que elegiste. Si ya tenías cuenta en BASE GCBA, conservás tu clave actual.</small>}
         <button className="btn btn-yellow" type="submit" disabled={busy}>{busy ? 'Ingresando...' : mode === 'link' ? 'Enviar enlace de acceso' : 'Ingresar'} <ArrowRight size={17} /></button>
       </form>
       {needsEmailVerification && <button className="auth-link-button" type="button" disabled={busy} onClick={() => void sendEmail('verify')}>Enviar enlace de verificación</button>}

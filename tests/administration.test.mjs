@@ -204,4 +204,23 @@ test('administration transactions, privacy, eligibility, duplicate checks and au
   const approved=(await db.query('select secretariat,directorate from red_conexion_gerencial.people where id=$1',[(await db.query('select person_id from rcg_private.admin_requests where id=$1',[details])).rows[0].person_id])).rows[0]
   assert.deepEqual(approved,{secretariat:'SS Prueba',directorate:'DG Prueba'})
   await actor(null,'anon');await assert.rejects(()=>rpc('server_gerencial_intake',[id(9),key(9)]))
+  // Initial CUIT accounts are blocked in SQL, including magic-link sessions.
+  await db.exec('reset role')
+  const firstPerson=(await db.query("insert into red_conexion_gerencial.people(given_name,family_name,position_title,ministry,email,phone) values('Primer','Ingreso','Gerente','Prueba','person10@example.test','') returning id")).rows[0].id
+  await db.query('insert into red_conexion_gerencial.member_accounts(person_id,auth_user_id,must_change_password) values($1,$2,true)',[firstPerson,id(10)])
+  const initialChangeRequired=async()=>(await db.query('select * from red_conexion_gerencial.get_my_account_status()')).rows[0].must_change_password
+  await actor(10)
+  assert.equal(await initialChangeRequired(),true)
+  assert.equal(await rpc('current_person_id'),null)
+  assert.equal(await rpc('is_member'),false)
+  assert.deepEqual((await db.query('select id from red_conexion_gerencial.people')).rows,[])
+  await assert.rejects(()=>db.query('update red_conexion_gerencial.member_accounts set must_change_password=false'))
+  await db.exec('reset role')
+  await db.query('update auth.users set encrypted_password=encrypted_password where id=$1',[id(10)])
+  await actor(10);assert.equal(await initialChangeRequired(),true,'unchanged hash cannot unlock initial access')
+  await db.exec('reset role');await db.query('update auth.users set encrypted_password=$1 where id=$2',['new-synthetic-hash',id(10)])
+  await actor(10);assert.equal(await rpc('current_person_id'),firstPerson);assert.equal(await initialChangeRequired(),false)
+  await db.exec('reset role');await db.query("insert into rcg_private.admin_access_states(user_id,state) values($1,'suspended')",[id(10)])
+  await db.query('update auth.users set encrypted_password=$1 where id=$2',['recovered-synthetic-hash',id(10)])
+  await actor(10);assert.equal(await rpc('is_member'),false,'password recovery never bypasses an administrative suspension')
 })

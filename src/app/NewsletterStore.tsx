@@ -12,6 +12,12 @@ import { CatalogContext } from './useCatalog'
 import { DirectoryLoading } from '../components/directory/DirectoryLoading'
 import { Link } from 'react-router-dom'
 
+const RECOVERY_KEY = 'rcg:password-recovery-user'
+function recoveryAccount(): string | null { try { return window.sessionStorage.getItem(RECOVERY_KEY) } catch { return null } }
+function rememberRecovery(userId: string | null) {
+  try { if (userId) window.sessionStorage.setItem(RECOVERY_KEY, userId); else window.sessionStorage.removeItem(RECOVERY_KEY) } catch { /* Session still works when storage is disabled. */ }
+}
+
 async function withClockRetry<T>(operation: () => Promise<T>): Promise<T> {
   for (const delay of [0, 1500, 4000]) {
     if (delay) await new Promise<void>(resolve => window.setTimeout(resolve, delay))
@@ -60,6 +66,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | undefined>()
   const [mustChangePassword, setMustChangePassword] = useState(false)
+  const [recoveringUserId, setRecoveringUserId] = useState<string | null>(recoveryAccount)
   const [directoryGate, setDirectoryGate] = useState<string | null>(null)
   const [sessionVersion, setSessionVersion] = useState(0)
   const sessionOwner = useRef({ userId: null as string | null, version: 0 })
@@ -86,6 +93,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setCurrentPersonId(null); setIsAdmin(false); setMustChangePassword(false)
         setCurrentPhotoUrl(undefined)
         setDirectoryGate(null)
+        if (recoveryAccount() !== nextId) rememberRecovery(null)
+        setRecoveringUserId(previous => previous === nextId ? previous : null)
       }
       setUser(nextUser)
       setAuthLoading(false)
@@ -94,9 +103,10 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
       // La comprobación inicial no puede reemplazar una sesión más reciente.
       if (!receivedAuthEvent) acceptUser(data.user)
     }).catch(() => { if (!receivedAuthEvent) acceptUser(null) })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       receivedAuthEvent = true
       acceptUser(session?.user ?? null)
+      if (event === 'PASSWORD_RECOVERY' && session?.user) { rememberRecovery(session.user.id); setRecoveringUserId(session.user.id) }
     })
     return () => { active = false; lifecycle.mounted = false; lifecycle.sequence++; subscription.unsubscribe() }
   }, [])
@@ -161,6 +171,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de Conexión Gerencial</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
   if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
   if (!user) return <LoginPage />
+  if (recoveringUserId === user.id) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Conexión Gerencial</div><h1>Restablecer contraseña</h1><p>Elegí una contraseña nueva para tu cuenta. Esto no cambia el estado de tu solicitud de ingreso.</p><PasswordChangeForm recovery onComplete={async () => { rememberRecovery(null); setRecoveringUserId(null); await refresh() }} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (dataLoading) return window.location.pathname.replace(/\/$/, '') === '/directorio' ? <DirectoryLoading /> : <div className="auth-screen">Cargando la Red...</div>
   if (directoryGate && directoryGate !== 'approved') return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Conexión Gerencial</div><h1>{directoryGate === 'pending' ? 'Solicitud pendiente de aprobación' : directoryGate === 'suspended' ? 'Acceso suspendido' : 'Solicitud no aprobada'}</h1><p>{directoryGate === 'pending' ? 'Tu solicitud está en revisión por la administración de la Red. Podrás ingresar cuando se apruebe el acceso.' : 'Contactá a la administración de la Red para consultar el estado de tu acceso.'}</p><Link className="btn btn-primary" to="/solicitar-acceso">Ver mi solicitud</Link><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div>

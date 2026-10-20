@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, ShieldCheck } from 'lucide-r
 import { requireSupabase, supabase } from '../lib/supabase'
 import { lookupIntake, submitAccessRequest } from '../services/directoryRequests'
 import { intakeEmail, intakeIdentifier } from '../utils/intakeIdentity'
+import { PASSWORD_MIN_LENGTH, PASSWORD_PATTERN, PASSWORD_REQUIREMENTS, validPassword } from '../utils/passwordPolicy'
 import type { IntakeProfile } from '../types/accessIntake'
 import { MyDirectoryRequests } from '../components/admin/MyDirectoryRequests'
 import { Button } from '../components/common/UI'
@@ -74,6 +75,7 @@ export function AccessRequestPage() {
   }
   const authenticate = async (event: React.FormEvent) => {
     event.preventDefault(); if (lock.current) return
+    if (mode === 'new' && !validPassword(password)) { setError(PASSWORD_REQUIREMENTS); return }
     lock.current = true; setBusy(true); setError(''); setMessage('')
     try {
       const client = requireSupabase()
@@ -118,8 +120,8 @@ export function AccessRequestPage() {
         {loading ? <p role="status">Verificando sesión…</p> : matchingSession ? <><p className="access-verified">Este correo ya está verificado. Podés continuar.</p><Button variant="yellow" onClick={() => void continueVerified()} disabled={busy}>{busy ? 'Consultando padrón…' : 'Continuar con mis datos'}</Button></> : <>
           {user && <p className="access-privacy">Hay una sesión con otro correo o sin verificar. Para esta solicitud usaremos únicamente el correo que completaste.</p>}
           <div className="access-mode"><button type="button" disabled={busy} aria-pressed={mode === 'new'} onClick={() => { setMode('new'); setError('') }}>Crear cuenta</button><button type="button" disabled={busy} aria-pressed={mode === 'existing'} onClick={() => { setMode('existing'); setError('') }}>Ya tengo cuenta</button></div>
-          <form onSubmit={event => void authenticate(event)}><label>Contraseña<div className="access-password"><input type={showPassword ? 'text' : 'password'} autoComplete={mode === 'new' ? 'new-password' : 'current-password'} minLength={mode === 'new' ? 12 : undefined} required value={password} disabled={busy} onChange={event => setPassword(event.target.value)} /><button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
-            <small>{mode === 'new' ? 'Usá al menos 12 caracteres. Te enviaremos un enlace para verificar el correo elegido.' : 'Si ya usás otra aplicación de BASE GCBA, utilizá la misma contraseña.'}</small>
+          <form onSubmit={event => void authenticate(event)}><label>Contraseña<div className="access-password"><input type={showPassword ? 'text' : 'password'} autoComplete={mode === 'new' ? 'new-password' : 'current-password'} minLength={mode === 'new' ? PASSWORD_MIN_LENGTH : undefined} pattern={mode === 'new' ? PASSWORD_PATTERN : undefined} title={mode === 'new' ? PASSWORD_REQUIREMENTS : undefined} required value={password} disabled={busy} onChange={event => setPassword(event.target.value)} /><button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
+            <small>{mode === 'new' ? `${PASSWORD_REQUIREMENTS} Te enviaremos un enlace para verificar el correo elegido.` : 'Si ya usás otra aplicación de BASE GCBA, utilizá la misma contraseña.'}</small>
             <Button variant="yellow" type="submit" disabled={busy}>{busy ? 'Procesando…' : mode === 'new' ? 'Verificar mi correo' : 'Ingresar y continuar'}</Button></form>
         </>}
       </>}
