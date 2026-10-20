@@ -1,9 +1,26 @@
 import { useCallback, useRef, useEffect, useState } from 'react'
-import { Copy, Mail, Phone, RefreshCw, Send } from 'lucide-react'
+import { Check, Copy, Mail, Phone, RefreshCw, Send } from 'lucide-react'
 import { Button, FilterSelect } from '../common/UI'
 import { getCandidateContacts } from '../../services/dotacion'
 import { candidateInvitation, invitationMailto } from '../../utils/candidateInvitation'
 import { useAdminQuery } from './useAdminQuery'
+
+function CopyEmailButton({ email }: { email: string }) {
+  const [state, setState] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle')
+  const copy = async () => {
+    if (state === 'copying') return
+    setState('copying')
+    try { await navigator.clipboard.writeText(email); setState('copied') }
+    catch { setState('error') }
+  }
+  return <div className="dotacion-contact-copy">
+    <Button type="button" disabled={state === 'copying'} onClick={() => void copy()} aria-label={`Copiar correo ${email}`} title="Copiar correo">
+      {state === 'copied' ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}{state === 'copied' ? 'Copiado' : 'Copiar'}
+    </Button>
+    <small role="status" aria-live="polite">{state === 'copied' ? 'Correo copiado.' : ''}</small>
+    {state === 'error' && <small role="alert">No se pudo copiar. Seleccioná el correo para copiarlo.</small>}
+  </div>
+}
 
 export function AdminCandidateContacts({ id, name }: { id: string; name: string }) {
   const [requested, setRequested] = useState(false)
@@ -38,6 +55,7 @@ function CandidateContactsContent({ id, name }: { id: string; name: string }) {
     <ul className="dotacion-contact-list">{query.data.contacts.map(contact => <li key={`${contact.kind}:${contact.value}`}>
       {contact.kind === 'email' ? <Mail size={17} aria-hidden="true" /> : <Phone size={17} aria-hidden="true" />}
       <div><span>{contact.label}</span><a href={contact.kind === 'email' ? `mailto:${encodeURIComponent(contact.value)}` : `tel:${contact.value.replace(/[^+\d]/g, '')}`}>{contact.value}</a></div>
+      {contact.kind === 'email' && <CopyEmailButton email={contact.value} />}
     </li>)}</ul>
     {emails.length ? <div className="dotacion-invitation">
       <label>Enviar invitación a<FilterSelect aria-label="Correo del candidato para la invitación" value={selected} onChange={event => { setChosenEmail(event.target.value); setCopyMessage('') }}>{emails.map(email => <option key={email.value} value={email.value}>{email.label}: {email.value}</option>)}</FilterSelect></label>
