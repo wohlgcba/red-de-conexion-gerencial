@@ -17,7 +17,7 @@ import type { AdminFilters as Filters, AdminTray } from '../../types/administrat
 export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
   const [view, setView] = useState<'requests' | 'members' | 'quality'>('requests')
   const [memberSearch, setMemberSearch] = useState('')
-  const [tray, setTray] = useState<AdminTray>('access')
+  const [tray, setTray] = useState<AdminTray>('all')
   const [filtersByTray, setFiltersByTray] = useState<Record<AdminTray, Filters>>(() => Object.fromEntries(TRAYS.map(item => [item.id, { ...EMPTY_ADMIN_FILTERS, status: item.id === 'all' ? '' : 'open' }])) as Record<AdminTray, Filters>)
   const [selection, setSelection] = useState<Partial<Record<AdminTray, string>>>({})
   const [revision, setRevision] = useState(0)
@@ -26,7 +26,14 @@ export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
   const load = useCallback(() => listAdminRequests(tray, filters), [tray, filters])
   const query = useAdminQuery(load)
   const closeDetail = useCallback(() => setSelection(previous => ({ ...previous, [tray]: undefined })), [tray])
-  const change = (field: keyof Filters | 'clear', value?: string | number) => setFiltersByTray(previous => ({ ...previous, [tray]: field === 'clear' ? { ...EMPTY_ADMIN_FILTERS } : { ...previous[tray], [field]: value, page: field === 'page' ? Number(value) : 1 } }))
+  const change = (field: keyof Filters | 'clear', value?: string | number) => {
+    if (field === 'clear') {
+      setTray('all'); setSelection({})
+      setFiltersByTray(Object.fromEntries(TRAYS.map(item => [item.id, { ...EMPTY_ADMIN_FILTERS }])) as Record<AdminTray, Filters>)
+      return
+    }
+    setFiltersByTray(previous => ({ ...previous, [tray]: { ...previous[tray], [field]: value, page: field === 'page' ? Number(value) : 1 } }))
+  }
   const showCount = (target: AdminTray) => { setTray(target); setView('requests'); setFiltersByTray(previous => ({ ...previous, [target]: { ...EMPTY_ADMIN_FILTERS, status: 'open' } })) }
   const selected = selection[tray] || null
   return <div className="administration-directory">
@@ -37,8 +44,8 @@ export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
     <div className="administration-tools" aria-label="Herramientas del Directorio"><Button variant={view === 'requests' ? 'primary' : 'outline'} onClick={() => setView('requests')}><FilePenLine size={16} /> Solicitudes</Button><Button variant={view === 'members' ? 'primary' : 'outline'} onClick={() => { setMemberSearch(''); setView('members') }}><UsersRound size={16} /> Directorio gerencial</Button><Button variant={view === 'quality' ? 'primary' : 'outline'} onClick={() => setView('quality')}><ShieldCheck size={16} /> Cruce con Dotación</Button><Link className="btn btn-outline" to="/administracion/direcciones-generales"><Building2 size={16} /> Gestionar unidades vinculadas</Link></div>
     {view === 'quality' ? <AdminDotacion onReview={name => { setMemberSearch(name); setView('members') }} /> : view === 'members' ? <AdminMembers key={memberSearch} quality={false} initialSearch={memberSearch} /> : <>
       <div className="administration-workspace">
-        <Surface className="administration-inbox"><div className="administration-trays" role="tablist" aria-label="Bandejas del Directorio" onKeyDown={event => { const current = TRAYS.findIndex(item => item.id === tray); const index = event.key === 'ArrowRight' ? (current + 1) % TRAYS.length : event.key === 'ArrowLeft' ? (current + TRAYS.length - 1) % TRAYS.length : event.key === 'Home' ? 0 : event.key === 'End' ? TRAYS.length - 1 : -1; if (index >= 0) { event.preventDefault(); setTray(TRAYS[index].id); document.getElementById(`admin-tab-${TRAYS[index].id}`)?.focus() } }}>{TRAYS.map(item => <button key={item.id} type="button" role="tab" tabIndex={tray === item.id ? 0 : -1} id={`admin-tab-${item.id}`} aria-controls="admin-inbox" aria-selected={tray === item.id} onClick={() => setTray(item.id)}>{item.label}</button>)}</div>
-          <div id="admin-inbox" role="tabpanel" aria-labelledby={`admin-tab-${tray}`}><AdminFilters value={filters} onChange={change} ministries={query.data?.ministries ?? []} tray={tray} />
+        <Surface className="administration-inbox">
+          <div id="admin-inbox"><AdminFilters value={filters} onChange={change} ministries={query.data?.ministries ?? []} tray={tray} onTrayChange={setTray} />
           <div className="administration-results-meta"><p role="status">{query.loading ? 'Consultando…' : query.data ? `${query.data.total} ${query.data.total === 1 ? 'solicitud' : 'solicitudes'} · ${TRAYS.find(item => item.id === tray)?.label}` : 'Consulta no disponible'}</p><Button onClick={query.reload} disabled={query.loading} aria-label="Actualizar bandeja"><RefreshCw size={15} /></Button></div>
           {query.loading || query.error ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} /> : query.data && query.data.rows.length ? <><AdminRequestTable rows={query.data.rows} tray={tray} selected={selected} disabled={query.loading} onSelect={id => setSelection(previous => ({ ...previous, [tray]: id }))} /><AdminPagination page={filters.page} total={query.data.total} size={filters.pageSize} onPage={n => change('page', n)} onSize={n => change('pageSize', n)} /></> : <div className="administration-empty"><ShieldCheck size={32} /><h2>{query.data?.total ? 'Esta página no contiene registros.' : 'No hay solicitudes en esta bandeja.'}</h2><p>No encontramos registros con los filtros seleccionados. Las nuevas solicitudes de ingreso y los cambios institucionales aparecerán aquí.</p><Button onClick={() => change('clear')}>Limpiar filtros</Button></div>}
           </div>

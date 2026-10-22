@@ -2,18 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
 import { Button, FilterSelect } from '../common/UI'
 import type { AdminFilters as Filters, AdminTray } from '../../types/administration'
-import { FIELD_LABELS, REASON_LABELS, STATUS_LABELS } from './adminModel'
+import { FIELD_LABELS, REASON_LABELS, STATUS_LABELS, TRAYS } from './adminModel'
 import { DirectoryDialog } from '../directory/DirectoryDialog'
 
-export function AdminFilters({ value, onChange, ministries, tray, members = false }: { value: Filters; onChange: (field: keyof Filters | 'clear', value?: string) => void; ministries: string[]; tray: AdminTray; members?: boolean }) {
+export function AdminFilters({ value, onChange, ministries, tray, onTrayChange, members = false }: { value: Filters; onChange: (field: keyof Filters | 'clear', value?: string) => void; ministries: string[]; tray: AdminTray; onTrayChange?: (tray: AdminTray) => void; members?: boolean }) {
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width:650px)').matches)
   const [open, setOpen] = useState(false)
   const close = useCallback(() => setOpen(false), [])
   useEffect(() => { const media = window.matchMedia('(max-width:650px)'); const listener = () => { setMobile(media.matches); setOpen(false) }; media.addEventListener('change', listener); return () => media.removeEventListener('change', listener) }, [])
   const select = (field: keyof Filters, label: string, options: Record<string, string>) => <label className="administration-filter" key={field}>{label}<FilterSelect aria-label={label} value={String(value[field])} onChange={event => onChange(field, event.target.value)}><option value="">Todos</option>{Object.entries(options).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</FilterSelect></label>
   const fields = <>
+    {!members && onTrayChange && <label className="administration-filter administration-filter-type">Tipo de solicitud<FilterSelect aria-label="Tipo de solicitud" value={tray} onChange={event => onTrayChange(event.target.value as AdminTray)}><option value="all">Todos</option>{TRAYS.filter(item => item.id !== 'all').map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</FilterSelect></label>}
     {select('status', 'Estado', members ? { active: 'Activo', inactive: 'Inactivo' } : { open: 'En revisión (todos)', ...STATUS_LABELS })}
-    {tray === 'all' && !members && select('kind', 'Tipo de solicitud', { access: 'Acceso', change: 'Cambio de datos' })}
     {tray === 'exceptions' && select('reason', 'Motivo de excepción', REASON_LABELS)}
     {tray === 'change' && !members && select('field', 'Dato a modificar', FIELD_LABELS)}
     {select('ministry', 'Organismo', Object.fromEntries(ministries.filter(Boolean).sort().map(item => [item, item])))}
