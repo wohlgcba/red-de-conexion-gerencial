@@ -8,6 +8,7 @@ import type { OrganizationResponsibility, OrganizationUnit } from '../../types/o
 import type { Person } from '../../types'
 import { effectiveMembership } from './organizationModel'
 import { unitTone } from './organizationGraph'
+import { AUTHORITY_LABELS, authorityPlaceholder } from '../../utils/organizationAuthority'
 
 export interface OrganizationNodeData extends Record<string, unknown> {
   unit: OrganizationUnit
@@ -38,7 +39,7 @@ export const OrganizationNodeCard = memo(function OrganizationNodeCard({ data, s
     <div className="organization-card-code" title={unit.code ?? undefined}>{unit.code ?? 'Código no informado'}</div>
     <button className="organization-card-responsible nodrag" type="button" onClick={() => data.onDetail(unit.id)} aria-label={`Consultar responsables de ${unit.name}`}>
       {assignment && <Avatar size={34} name={assignment.name} photoUrl={person?.photoUrl} />}
-      <span><strong>{assignment?.name ?? (unit.responsibilityPending ? 'Asignación pendiente de revisión' : 'Responsable no identificado')}</strong>{assignment || unit.responsibilityPending ? <MembershipBadge membership={membership} /> : <small>Sin asignación confirmada</small>}</span>
+      <span><strong title={assignment?.name}>{assignment?.name ?? authorityPlaceholder(unit)}</strong>{assignment && <small className="organization-card-role" title={assignment.role}>{assignment.role}</small>}{assignment && <span className="organization-card-status"><MembershipBadge membership={membership} />{assignment.identificationStatus && <span className="organization-identification-state" title={AUTHORITY_LABELS[assignment.identificationStatus]} aria-label={AUTHORITY_LABELS[assignment.identificationStatus]}>{assignment.identificationStatus === 'automatic' ? 'Auto.' : assignment.identificationStatus === 'manual' ? 'Manual' : 'Pendiente'}</span>}</span>}</span>
     </button>
     <div className="organization-card-bottom"><span>{unit.type}</span><button type="button" className="nodrag" aria-label={`Ver detalle de ${unit.name}`} onClick={() => data.onDetail(unit.id)}><Eye size={15} /> Detalle</button></div>
     {childCount > 0 && <div className="organization-card-children"><span>{childCount} {childCount === 1 ? 'dependencia' : 'dependencias'}</span>{expanded && hiddenCount > 0 && <button type="button" className="nodrag" onClick={() => data.onMore(unit.id)} aria-label={`Mostrar más dependencias de ${unit.name}`}><Plus size={13} />{hiddenCount} más</button>}</div>}

@@ -38,7 +38,7 @@ export function buildOrganizationIndex(dataset: OrganizationDataset) {
     if (!units.has(assignment.unitId)) throw new Error('Una responsabilidad apunta a una unidad inexistente.')
     const list = assignments.get(assignment.unitId) ?? []; list.push(assignment); assignments.set(assignment.unitId, list)
   }
-  const search = dataset.units.map(unit => ({ unit, rootId: rootId.get(unit.id)!, text: norm([unit.name, unit.type, ...(assignments.get(unit.id) ?? []).map(item => item.name)].join(' ')) }))
+  const search = dataset.units.map(unit => ({ unit, rootId: rootId.get(unit.id)!, text: norm([unit.name, ...(unit.aliases ?? []), unit.proposedName ?? '', unit.type, ...(assignments.get(unit.id) ?? []).flatMap(item => [item.name, item.role])].join(' ')) }))
   return { units, children, roots, path, rootId, assignments, search,
     statistics: { roots: roots.length, units: units.size, responsible: new Set(dataset.responsibilities.map(item => item.responsibleId)).size } }
 }

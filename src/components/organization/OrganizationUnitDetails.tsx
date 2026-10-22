@@ -16,6 +16,7 @@ export function OrganizationUnitDetails({ unit, index, onSelect, onProfile }: {
   const [visibleGroups, setVisibleGroups] = useState(20)
   return <div className="organization-detail-content" key={unit.id}>
     <h2>{unit.name}</h2>
+    {unit.proposedName && <p className="organization-name-review">Denominación en revisión: <strong>{unit.proposedName}</strong>{unit.nameEvidence && <small>{unit.nameEvidence}</small>}</p>}
     <nav className="organization-breadcrumb" aria-label="Recorrido institucional">{path.map((ancestor, i) => <span key={ancestor.id}>{i > 0 && <ChevronRight size={13} aria-hidden="true" />}<button type="button" onClick={() => onSelect(ancestor.id)} aria-current={ancestor.id === unit.id ? 'location' : undefined}>{ancestor.name}</button></span>)}</nav>
     <dl className="organization-institutional-data">
       <div><Building2 size={17} /><dt>Tipo</dt><dd>{unit.type}</dd></div>
@@ -27,7 +28,7 @@ export function OrganizationUnitDetails({ unit, index, onSelect, onProfile }: {
     </dl>
     <section className="organization-responsibilities"><h3>Responsables y dependencias</h3><p className="organization-section-help">Asignaciones directas de esta unidad y sus dependencias inmediatas.</p>
       {groups.slice(0, visibleGroups).map(group => <div key={group.id} className="organization-responsible-group">
-        {(index.assignments.get(group.id)?.length ? index.assignments.get(group.id)! : [undefined]).map((assignment, i) => <OrganizationResponsibleCard key={assignment?.id ?? i} assignment={assignment} pending={group.responsibilityPending} unitName={group.name} direct={group.id === unit.id} onProfile={onProfile} />)}
+        {(index.assignments.get(group.id)?.length ? index.assignments.get(group.id)! : [undefined]).map((assignment, i) => <OrganizationResponsibleCard key={assignment?.id ?? i} assignment={assignment} pending={group.responsibilityPending} identificationStatus={group.identificationStatus} reason={group.identificationReason} unitName={group.name} direct={group.id === unit.id} onProfile={onProfile} />)}
       </div>)}
       {groups.length > visibleGroups && <Button onClick={() => setVisibleGroups(count => count + 20)}>Mostrar más dependencias ({groups.length - visibleGroups})</Button>}
       {children.length === 0 && <p className="organization-section-help">No hay dependencias directas relevadas para esta unidad.</p>}

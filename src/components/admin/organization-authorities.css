@@ -1,0 +1,15 @@
+.authority-filters { grid-template-columns: minmax(220px,1fr) minmax(220px,340px) auto; align-items: end; }
+.authority-panel td:first-child { min-width: 230px; }
+.authority-panel td:last-child .btn { white-space: nowrap; }
+.authority-review-modal .directory-modal { width: min(820px,calc(100vw - 32px)); }
+.authority-review-modal h3 { margin: 0 0 8px; }
+.authority-candidates { margin: 22px 0; }
+.authority-candidates article { display: grid; gap: 5px; border: 1px solid #d6e8f6; border-radius: 10px; padding: 14px; margin-top: 10px; }
+.authority-candidates small { color: #567b9c; }
+.authority-decision { display: grid; gap: 15px; }
+.authority-decision label { display: grid; gap: 7px; font-size: .82rem; font-weight: 500; }
+.authority-decision :is(input,textarea) { width: 100%; padding: 10px 12px; border: 1px solid #c5dff3; border-radius: 8px; color: inherit; font: inherit; background: white; }
+.authority-name-proposal { margin: 18px 0; padding: 14px; border-radius: 10px; background: #eef8ff; border: 1px solid #cce5f6; }
+.authority-name-proposal label { display: flex; align-items: flex-start; gap: 9px; font-size: .8rem; }
+@media (max-width: 750px) { .authority-filters { grid-template-columns: 1fr; } }
+.authority-view-switch { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }

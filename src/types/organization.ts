@@ -1,3 +1,4 @@
+export type AuthorityStatus = 'automatic' | 'manual' | 'pending' | 'vacant' | 'unidentified' | 'not_applicable'
 export interface OrganizationUnit {
   id: string
   parentId: string | null
@@ -6,6 +7,12 @@ export interface OrganizationUnit {
   code: string | null
   directorateId: string | null
   responsibilityPending?: boolean
+  identificationStatus?: AuthorityStatus
+  identificationReason?: string
+  referenceDate?: string
+  aliases?: string[]
+  proposedName?: string
+  nameEvidence?: string
 }
 
 export type Membership = 'member' | 'non_member' | 'pending'
@@ -17,6 +24,17 @@ export interface OrganizationResponsibility {
   role: string
   membership: Membership
   personId: string | null
+  identificationStatus?: AuthorityStatus
+  administrativeRole?: string
+  confidence?: 'high' | 'medium' | 'low'
+  method?: string
+  source?: string
+  sourcePeriod?: string
+  sourceDate?: string
+  checkedAt?: string
+  validFrom?: string
+  validUntil?: string
+  validityBasis?: string
 }
 
 export interface OrganizationDataset {
