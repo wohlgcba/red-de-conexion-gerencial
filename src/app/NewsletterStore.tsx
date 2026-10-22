@@ -43,8 +43,6 @@ export type Store = {
   signOut: () => Promise<void>
   savePerson: (person: Parameters<typeof catalog.savePerson>[0]) => Promise<void>
   deletePerson: (id: string) => Promise<void>
-  saveDirectorate: (item: Parameters<typeof catalog.saveDirectorate>[0]) => Promise<void>
-  deleteDirectorate: (id: string) => Promise<void>
   upsert: (item: Newsletter) => Promise<string>
   updateStatus: (id: string, status: NewsletterStatus) => Promise<void>
   duplicate: (id: string) => Promise<string>
@@ -184,8 +182,6 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     signOut: async () => { const { error: signOutError } = await requireSupabase().auth.signOut(); if (signOutError) throw signOutError },
     savePerson: async person => { await catalog.savePerson(person); await refresh() },
     deletePerson: async id => { await catalog.deletePerson(id); await refresh() },
-    saveDirectorate: async item => { await catalog.saveDirectorate(item); await refresh() },
-    deleteDirectorate: async id => { await catalog.deleteDirectorate(id); await refresh() },
     upsert: async item => { const id = await catalog.saveNewsletter(item); await refresh(); return id },
     updateStatus: async (id, status) => { const item = items.find(entry => entry.id === id); if (!item) throw new Error('Newsletter no encontrado'); await catalog.updateNewsletterStatus(item, status); await refresh() },
     duplicate: async id => {

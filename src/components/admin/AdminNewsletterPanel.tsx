@@ -15,7 +15,7 @@ import './editorial.css'
 
 export function AdminNewsletterPanel({ navigation }: { navigation?: ReactNode }) {
   const { isAdmin } = useCatalog()
-  const [tray, setTray] = useState<EditorialTray>('pending')
+  const [tray, setTray] = useState<EditorialTray>('all')
   const [filters, setFilters] = useState<Filters>({ ...EDITORIAL_FILTERS })
   const [selected, setSelected] = useState<{ id: string; action?: EditorialAction; history?: boolean } | null>(null)
   const load = useCallback(() => getEditorialPage(tray, filters), [tray, filters])

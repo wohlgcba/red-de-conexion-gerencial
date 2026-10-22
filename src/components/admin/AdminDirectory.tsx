@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Building2, Clock3, FilePenLine, Info, RefreshCw, ShieldCheck, TriangleAlert, UserRoundPlus, UsersRound } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Clock3, FilePenLine, Info, RefreshCw, ShieldCheck, TriangleAlert, UserRoundPlus, UsersRound } from 'lucide-react'
 import { Button, Surface } from '../common/UI'
 import { AdminFilters } from './AdminFilters'
 import { AdminLoadState, AdminPagination } from './AdminPrimitives'
@@ -41,7 +40,7 @@ export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
       {([{ id: 'access', label: 'Pendientes de acceso', icon: UserRoundPlus }, { id: 'exceptions', label: 'Excepciones pendientes', icon: TriangleAlert }, { id: 'change', label: 'Cambios de datos', icon: FilePenLine }, { id: 'all', label: 'Total en revisión', icon: Clock3 }] as const).map(item => <button key={item.id} type="button" onClick={() => showCount(item.id)} aria-label={`${item.label}: ${query.data?.counts[item.id] ?? 'sin datos'}`}><span><item.icon size={23} /></span><div>{item.label}<strong>{query.data ? query.data.counts[item.id] : '—'}</strong></div></button>)}
     </div></Surface>
     {navigation}
-    <div className="administration-tools" aria-label="Herramientas del Directorio"><Button variant={view === 'requests' ? 'primary' : 'outline'} onClick={() => setView('requests')}><FilePenLine size={16} /> Solicitudes</Button><Button variant={view === 'members' ? 'primary' : 'outline'} onClick={() => { setMemberSearch(''); setView('members') }}><UsersRound size={16} /> Directorio gerencial</Button><Button variant={view === 'quality' ? 'primary' : 'outline'} onClick={() => setView('quality')}><ShieldCheck size={16} /> Cruce con Dotación</Button><Link className="btn btn-outline" to="/administracion/direcciones-generales"><Building2 size={16} /> Gestionar unidades vinculadas</Link></div>
+    <div className="administration-tools" aria-label="Herramientas del Directorio"><Button variant={view === 'requests' ? 'primary' : 'outline'} onClick={() => setView('requests')}><FilePenLine size={16} /> Solicitudes</Button><Button variant={view === 'members' ? 'primary' : 'outline'} onClick={() => { setMemberSearch(''); setView('members') }}><UsersRound size={16} /> Directorio gerencial</Button><Button variant={view === 'quality' ? 'primary' : 'outline'} onClick={() => setView('quality')}><ShieldCheck size={16} /> Cruce con Dotación</Button></div>
     {view === 'quality' ? <AdminDotacion onReview={name => { setMemberSearch(name); setView('members') }} /> : view === 'members' ? <AdminMembers key={memberSearch} quality={false} initialSearch={memberSearch} /> : <>
       <div className="administration-workspace">
         <Surface className="administration-inbox">

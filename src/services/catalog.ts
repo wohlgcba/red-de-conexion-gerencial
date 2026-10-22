@@ -71,24 +71,6 @@ export async function deletePerson(id: string): Promise<void> {
   if (!data?.length) throw new Error('No se pudo eliminar el perfil.')
 }
 
-export async function saveDirectorate(item: Partial<Directorate> & Pick<Directorate, 'name' | 'ministry'>): Promise<void> {
-  const values = { name: item.name.trim(), ministry: item.ministry.trim(), secretariat: item.secretariat?.trim() ?? '', summary: item.summary?.trim() ?? '', topics: item.topics ?? [] }
-  if (item.id) {
-    const { data, error } = await db().from('directorates').update(values).eq('id', item.id).eq('version', item.version ?? 0).select('id')
-    check(error)
-    if (!data?.length) throw new Error('La dirección cambió desde que la abriste. Actualizá la página.')
-  } else {
-    const { error } = await db().from('directorates').insert(values)
-    check(error)
-  }
-}
-
-export async function deleteDirectorate(id: string): Promise<void> {
-  const { data, error } = await db().from('directorates').delete().eq('id', id).select('id')
-  check(error)
-  if (!data?.length) throw new Error('No se pudo eliminar la dirección.')
-}
-
 export async function uploadCover(file: File, userId: string): Promise<string> {
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type]
   if (!extension || file.size > 5 * 1024 * 1024) throw new Error('Elegí una imagen JPG, PNG o WebP de hasta 5 MB.')
