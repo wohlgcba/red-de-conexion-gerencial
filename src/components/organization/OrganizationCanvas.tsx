@@ -39,15 +39,24 @@ function CanvasContent(props: OrganizationCanvasProps) {
   const [columns, setColumns] = useState(4)
   const [ready, setReady] = useState(false)
   const flow = useReactFlow<ChartNode>()
+  const lastSize = useRef<{ width: number; height: number } | null>(null)
   const path = useMemo(() => new Set((index.path.get(selectedId) ?? []).map(unit => unit.id)), [index, selectedId])
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect.width ?? 1200
+      const height = entries[0]?.contentRect.height ?? 620
+      const previous = lastSize.current
+      lastSize.current = { width, height }
+      // Keep the same world point at the center when entering/leaving fullscreen.
+      if (previous && previous.width > 0 && previous.height > 0 && width > 0 && height > 0 && (width !== previous.width || height !== previous.height)) {
+        const viewport = flow.getViewport()
+        void flow.setViewport({ ...viewport, x: viewport.x + (width - previous.width) / 2, y: viewport.y + (height - previous.height) / 2 })
+      }
       setColumns(Math.max(2, Math.min(5, Math.floor((width - 40) / (NODE_WIDTH + 20)))))
     })
     if (container.current) observer.observe(container.current)
     return () => observer.disconnect()
-  }, [])
+  }, [flow])
   const positions = useMemo(() => layoutOrganizationGraph(graph, columns), [graph, columns])
   const keyboardFocus = useCallback((id: string) => {
     const point = positions.get(id)

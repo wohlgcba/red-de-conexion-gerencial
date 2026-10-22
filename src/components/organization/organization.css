@@ -1,6 +1,6 @@
 .organization-page { min-width: 0; }
 .organization-intro { padding: 20px; }
-.organization-intro .page-heading { align-items: center; gap: 22px; margin-bottom: 16px; }
+.organization-intro .page-heading { align-items: center; gap: 22px; margin-bottom: 0; }
 .organization-intro .page-heading > div:first-child { flex: 1; min-width: 0; }
 .organization-intro .page-heading h1 { font-size: 2rem; }
 .organization-intro .page-heading p { font-size: .85rem; line-height: 1.55; margin-top: 4px; }
@@ -9,7 +9,7 @@
 .organization-stat > span { display: grid; place-items: center; color: #0074b8; background: #eaf7fe; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; }
 .organization-stat small { display: block; color: #6384ab; font-size: .7rem; }
 .organization-stat strong { display: block; font-size: 1.5rem; line-height: 1.25; }
-.organization-controls { display: flex; align-items: end; gap: 12px; padding-top: 14px; border-top: 1px solid #e4eff8; }
+.organization-controls { display: flex; align-items: end; gap: 12px; }
 .organization-controls .search-input { flex: 1; min-width: 180px; }
 .organization-controls .btn { min-height: 42px; white-space: nowrap; font-size: .8rem; }
 .organization-root-filter { width: 240px; flex-shrink: 0; }
@@ -71,7 +71,19 @@
 /* Graphic organization explorer. Scoped to this section and its own modal. */
 .organization-graph-surface { min-width: 0; overflow: hidden; padding: 0; }
 .organization-graph-heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; padding: 16px 20px 8px; border-bottom: 1px solid #e5eff6; }
-.organization-graph-heading > div { min-width: 0; flex: 1; }
+.organization-graph-heading > div:first-child { min-width: 0; flex: 1; }
+.organization-graph-heading-actions { display: flex; align-items: start; gap: 18px; }
+.organization-graph-heading-actions .organization-fullscreen-toggle { flex: none; white-space: nowrap; min-height: 40px; }
+.organization-graph-toolbar { position: relative; z-index: 10; padding: 18px 20px; border-bottom: 1px solid #e5eff6; background: #fff; }
+.organization-graph-toolbar .organization-search-results { position: absolute; top: calc(100% - 2px); left: 20px; width: min(720px,calc(100% - 40px)); margin-top: 0; max-height: min(360px,45dvh); background: #fff; box-shadow: 0 12px 28px #123d6324; }
+.organization-graph-surface > .organization-expansion-notice { margin: 8px 20px; }
+.organization-explorer-shell { min-width: 0; }
+html.organization-fullscreen-active, html.organization-fullscreen-active body { overflow: hidden; }
+.organization-explorer-shell.is-fullscreen { position: fixed; inset: 0; z-index: 80; height: 100dvh; background: #f3faff; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.organization-explorer-shell.is-fullscreen .organization-graph-surface { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 0; border: 0; }
+.is-fullscreen :is(.organization-graph-heading,.organization-graph-toolbar,.organization-graph-caption,.organization-expansion-notice) { flex: none; }
+.organization-explorer-shell.is-fullscreen .organization-canvas { flex: 1; min-height: 0; height: auto; }
+.organization-explorer-shell.is-fullscreen .organization-mobile-explorer { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .organization-graph-heading .btn { font-size: .8rem; }
 .organization-overview-title { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #073665; margin-bottom: 10px; }
 .organization-overview-title > svg { color: #0676b2; }
@@ -156,7 +168,12 @@
 @media (max-width: 1100px) { .organization-graph-heading { padding: 13px; } .organization-legend ul { grid-template-columns: 1fr; } .organization-zoom-controls { gap: 5px; right: 10px; } }
 @media (max-width: 700px) {
  .organization-graph-heading { flex-wrap: wrap; gap: 4px; }
- .organization-graph-heading > div { flex-basis: 100%; }
+ .organization-graph-heading > div:first-child { flex-basis: 100%; }
+ .organization-graph-heading-actions { width: 100%; gap: 10px; align-items: start; }
+ .organization-graph-heading-actions .organization-legend { flex: 1; width: auto; min-width: 0; }
+ .organization-fullscreen-toggle > span { display: none; }
+ .organization-graph-toolbar { padding: 14px 12px; }
+ .organization-graph-toolbar .organization-search-results { left: 12px; width: calc(100% - 24px); max-height: 40dvh; }
  .organization-legend { width: 100%; }
  .organization-legend ul { grid-template-columns: 1fr 1fr; }
  .directory-modal-backdrop.organization-detail-modal { padding: 0; }
