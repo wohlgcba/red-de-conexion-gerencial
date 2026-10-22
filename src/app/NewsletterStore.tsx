@@ -189,7 +189,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     upsert: async item => { const id = await catalog.saveNewsletter(item); await refresh(); return id },
     updateStatus: async (id, status) => { const item = items.find(entry => entry.id === id); if (!item) throw new Error('Newsletter no encontrado'); await catalog.updateNewsletterStatus(item, status); await refresh() },
     duplicate: async id => {
-      const source = items.find(item => item.id === id)
+      const root = items.find(item => item.id === id)
+      const source = root?.workingCopy ?? root
       if (!source || (!currentPersonId && !isAdmin)) throw new Error('No se puede duplicar este newsletter.')
       const copy: Newsletter = { ...source, id: '', title: `${source.title.slice(0, 92)} (copia)`, authorId: currentPersonId ?? '', authorUserId: user.id, status: 'borrador', featured: false, observation: undefined, version: undefined }
       const newId = await catalog.saveNewsletter(copy)

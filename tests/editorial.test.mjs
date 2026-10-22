@@ -1,0 +1,123 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { PGlite } from '@electric-sql/pglite'
+
+const uid=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+const migration=name=>readFile(new URL(`../supabase/${name}`,import.meta.url),'utf8')
+test('editorial versions, public projection, moderation, audit, notifications and permissions',async t=>{
+ const db=new PGlite();t.after(()=>db.close())
+ await db.exec(`create role authenticated;create role anon;create role service_role;create schema auth;create schema storage;
+ create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,owner_id text);
+ create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;`)
+ for(const name of ['red_conexion_gerencial.sql','rcg_crud.sql','rcg_user_accounts.sql','rcg_organization.sql','rcg_administration.sql','rcg_administration_intake.sql','rcg_admin_newsletters.sql','rcg_newsletter_rich_text.sql','rcg_newsletter_reactions.sql'])await db.exec(await migration(name))
+ for(let n=1;n<=3;n++)await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[uid(n),`editorial${n}@example.test`])
+ await db.query('insert into red_conexion_gerencial.admin_users(user_id,email) values($1,$2)',[uid(1),'editorial1@example.test'])
+ for(let n=2;n<=3;n++){
+  await db.query("insert into red_conexion_gerencial.people(id,given_name,family_name,position_title,ministry,email,source_sheet,phone) values($1,'Persona','Prueba','Gerente','Organismo de prueba',$2,'Test','')",[uid(n),`editorial${n}@example.test`])
+  await db.query('insert into red_conexion_gerencial.member_accounts(person_id,auth_user_id,must_change_password) values($1,$1,false)',[uid(n)])
+ }
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[uid(2)])
+ const legacy=(await db.query("insert into red_conexion_gerencial.newsletters(author_id,author_user_id,title,topic,body,status) values($1,$1,'Legado','Gestión','Texto anterior','publicado') returning *",[uid(2)])).rows[0]
+ await db.exec(await migration('rcg_editorial.sql'));await db.exec(await migration('rcg_editorial.sql'))
+ const actor=async(n,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[n?uid(n):'']);await db.exec(`set role ${role}`)}
+ const rpc=async(name,args=[]) => (await db.query(`select red_conexion_gerencial.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as value`,args)).rows[0].value
+ const content=(body='Texto nuevo',extra={})=>({title:'Publicación de prueba',subtitle:'Subtítulo',topic:'Gestión',summary:'Resumen',body,body_html:`<p>${body}</p>`,image_path:null,tags:['Gestión'],reading_minutes:1,...extra})
+ const root=async id=>(await db.query('select * from red_conexion_gerencial.newsletters where id=$1',[id])).rows[0]
+ const detail=id=>rpc('editorial_detail',[id]);const list=(tray,filters={})=>rpc('editorial_list',[tray,filters])
+ const save=(id,version,data,intent,note='')=>rpc('editorial_save',[id,version,data,intent,note])
+ const decide=async(id,action,note='',featured=false)=>{const n=await root(id);return rpc('editorial_decide',[id,n.version,n.working_revision,action,note,featured])}
+ await actor(2)
+ assert.equal((await root(legacy.id)).body,legacy.body);assert.equal((await root(legacy.id)).version,legacy.version)
+ assert.equal(String((await root(legacy.id)).updated_at),String(legacy.updated_at))
+ await assert.rejects(()=>list('pending'),/denegado/)
+ await assert.rejects(()=>db.query('select * from rcg_private.newsletter_versions'))
+ await assert.rejects(()=>db.query("update red_conexion_gerencial.newsletters set status='publicado' where id=$1",[legacy.id]))
+ await assert.rejects(()=>db.query('delete from red_conexion_gerencial.newsletters where id=$1',[legacy.id]))
+ await assert.rejects(()=>save(null,0,content(),'publicado'),/permitida/)
+ await assert.rejects(()=>save(null,0,content('',{title:''}),'pendiente'),/Revisá/)
+ const id=await save(null,0,content(),'borrador');let n=await root(id)
+ await actor(1);assert.equal((await list('pending')).total,0,'unsent drafts are not review requests')
+ await actor(2);await save(id,n.version,content(),'pendiente');n=await root(id)
+ await actor(3);assert.equal(await root(id),undefined);await assert.rejects(()=>detail(id),/denegado/)
+ await actor(1);assert.equal((await list('pending')).total,1)
+ await decide(id,'cambios','Agregá la fuente del dato.');let d=await detail(id)
+ assert.equal((await list('changes')).total,1);assert.equal((await list('pending')).total,0)
+ assert.equal(d.history[0].emailState,'pending_configuration')
+ await actor(2);assert((await rpc('get_my_notifications')).items.some(x=>x.message.includes('cambios')))
+ n=await root(id);await save(id,n.version,content('Texto corregido'),'pendiente')
+ await actor(1);assert.equal((await list('changes')).total,0);assert.equal((await list('pending')).rows[0].request_type,'correction')
+ n=await root(id);await decide(id,'publicado','',true)
+ assert.equal((await root(id)).featured,true)
+ await assert.rejects(()=>rpc('editorial_decide',[id,n.version,n.working_revision,'publicado','',false]),/cambió/)
+ await actor(2);assert.equal((await root(id)).body,'Texto corregido')
+ const publicRevision=(await root(id)).published_revision
+ await save(id,(await root(id)).version,content('Versión dos pendiente'),'pendiente')
+ n=await root(id);assert.equal(n.status,'publicado');assert.equal(n.body,'Texto corregido');assert.equal(n.published_revision,publicRevision)
+ assert.equal((await rpc('editorial_my_work')).find(x=>x.id===id).body,'Versión dos pendiente')
+ await actor(3);assert.equal((await root(id)).body,'Texto corregido');assert.equal((await rpc('editorial_my_work')).length,0)
+ await assert.rejects(()=>detail(id),/denegado/)
+ assert.equal((await db.query('select * from red_conexion_gerencial.set_newsletter_reaction($1,$2)',[id,'like'])).rows[0].counts.like,1)
+ await actor(1);assert.equal((await list('published')).rows.filter(x=>x.id===id).length,1);assert.equal((await list('all')).rows.filter(x=>x.id===id).length,1)
+ await decide(id,'rechazado','Revisá las cifras y volvé a preparar una propuesta.')
+ assert.equal((await root(id)).body,'Texto corregido');assert.equal((await root(id)).status,'publicado')
+ assert.equal((await detail(id)).versions[0].state,'rechazado')
+ await decide(id,'hide','Retiro temporal para revisar las fuentes.')
+ assert.equal((await root(id)).status,'oculto');assert.equal((await list('retired')).total,1)
+ await actor(3);assert.equal(await root(id),undefined);assert.deepEqual((await db.query('select * from red_conexion_gerencial.get_newsletter_reactions($1)',[[id]])).rows,[])
+ await assert.rejects(()=>rpc('set_newsletter_reaction',[id,'like']),/disponible/)
+ await actor(1);await decide(id,'restore','Se verificaron las fuentes nuevamente.')
+ assert.equal((await root(id)).status,'publicado');await decide(id,'archive','Se conserva como referencia histórica.')
+ assert.equal((await root(id)).status,'archivado');await decide(id,'restore','Contenido vigente y listo para circular.')
+ assert.equal((await root(id)).body,'Texto corregido')
+ await decide(id,'hide','Oculto antes de pasar al archivo histórico.');await decide(id,'archive','Archivado mientras se verifica la fuente.');await decide(id,'restore','Se restaura al estado anterior del archivo.')
+ assert.equal((await root(id)).status,'oculto');await decide(id,'restore','La publicación vuelve a ser visible.');assert.equal((await root(id)).status,'publicado')
+ await save(id,(await root(id)).version,content('Corrección de una edición publicada'),'minor','Se corrigió la puntuación del título.')
+ assert.equal((await root(id)).status,'publicado');assert.equal((await detail(id)).versions[0].state,'publicado')
+ const institutional=await save(null,0,content('Publicación institucional'),'publicado')
+ assert.equal((await root(institutional)).author_id,null);assert.equal((await root(institutional)).status,'publicado')
+ await assert.rejects(async()=>save(institutional,(await root(institutional)).version,content('Error menor'),'minor','corto'),/Justificá/)
+ await save(institutional,(await root(institutional)).version,content('Error menor corregido'),'minor','Se corrigió la puntuación del texto.')
+ assert.equal((await root(institutional)).body,'Error menor corregido');assert.equal((await detail(institutional)).history[0].action,'minor')
+ await assert.rejects(async()=>rpc('editorial_delete_draft',[institutional,(await root(institutional)).version]),/eliminación/)
+ const draft=await save(null,0,content(),'borrador');assert.equal((await rpc('editorial_my_work')).find(x=>x.id===draft).can_delete_draft,true)
+ await rpc('editorial_delete_draft',[draft,(await root(draft)).version]);assert.equal(await root(draft),undefined)
+ const pending=await save(null,0,content('Pendiente archivada'),'pendiente');await decide(pending,'archive','Se archiva la propuesta aún no publicada.');assert.equal((await root(pending)).status,'archivado');await decide(pending,'restore','Se retoma el proceso de revisión editorial.');assert.equal((await root(pending)).status,'pendiente')
+ await assert.rejects(()=>decide(pending,'restore','No corresponde una segunda restauración.'),/Transición/)
+ const firstPage=await list('all',{page:1,pageSize:1,sort:'title'}),secondPage=await list('all',{page:2,pageSize:1,sort:'title'});assert.equal(firstPage.rows.length,1);assert.notEqual(firstPage.rows[0].id,secondPage.rows[0].id)
+ assert.equal((await list('all',{query:'institucional'})).total,0)
+ await actor(2)
+ const reviewedDraft=await save(null,0,content('Propuesta para corregir'),'pendiente')
+ await actor(1);await decide(reviewedDraft,'cambios','Corregí el contenido antes de volver a enviarlo.')
+ await actor(2);await save(reviewedDraft,(await root(reviewedDraft)).version,content('Corrección en borrador'),'borrador')
+ assert.equal((await rpc('editorial_my_work')).find(x=>x.id===reviewedDraft).can_delete_draft,false)
+ await assert.rejects(async()=>rpc('editorial_delete_draft',[reviewedDraft,(await root(reviewedDraft)).version]),/eliminación/)
+ const legacyPublished=(await root(legacy.id)).published_revision
+ for(let i=0;i<101;i++)await save(legacy.id,(await root(legacy.id)).version,content(`Guardado ${i}`),'borrador')
+ const manyVersions=await detail(legacy.id)
+ assert.equal(manyVersions.versions.length,101)
+ assert(manyVersions.versions.some(x=>x.id===legacyPublished),'published version remains available for comparison after 100 saves')
+ assert.equal(new Set(manyVersions.versions.map(x=>x.id)).size,manyVersions.versions.length)
+ await actor(null,'anon');await assert.rejects(()=>rpc('editorial_detail',[id]));await assert.rejects(()=>list('all'))
+ // Storage keeps historical covers, while a member cannot read another author's proposal.
+ await db.exec('reset role;alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant select,delete on storage.objects to authenticated;')
+ const oldCover=`${uid(2)}/previous.jpg`,newCover=`${uid(2)}/proposal.jpg`,orphan=`${uid(2)}/unused.jpg`
+ for(const name of [oldCover,newCover,orphan])await db.query("insert into storage.objects(bucket_id,name,owner_id) values('rcg-newsletters',$1,$2)",[name,uid(2)])
+ await actor(2)
+ await assert.rejects(()=>save(null,0,content('Portada ajena',{image_path:`${uid(3)}/private.jpg`}),'pendiente'),/portada/)
+ await assert.rejects(()=>save(null,0,content('Autor falseado',{author_user_id:uid(3)}),'pendiente'),/Revisá/)
+ const images=await save(null,0,content('Primera portada',{image_path:oldCover}),'pendiente')
+ await actor(1);await decide(images,'publicado')
+ await actor(2);await save(images,(await root(images)).version,content('Nueva portada propuesta',{image_path:newCover}),'pendiente')
+ assert.equal((await db.query('delete from storage.objects where name=$1 returning name',[oldCover])).rows.length,0)
+ assert.equal((await db.query('delete from storage.objects where name=$1 returning name',[newCover])).rows.length,0)
+ assert.equal((await db.query('delete from storage.objects where name=$1 returning name',[orphan])).rows.length,1)
+ await actor(3);assert.equal((await db.query('select name from storage.objects where name=$1',[oldCover])).rows.length,1)
+ assert.equal((await db.query('select name from storage.objects where name=$1',[newCover])).rows.length,0)
+ await actor(1);assert.equal((await db.query('select name from storage.objects where name=$1',[newCover])).rows.length,1)
+ await db.exec('reset role');assert.equal((await db.query("select count(*) as total from rcg_private.newsletter_email_outbox where state='sent'")).rows[0].total,0,'no simulated email delivery')
+ assert((await db.query('select count(*) as total from rcg_private.newsletter_editorial_audit')).rows[0].total>10)
+})

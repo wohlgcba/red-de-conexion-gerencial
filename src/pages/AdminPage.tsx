@@ -12,5 +12,5 @@ export function AdminPage() {
   if (!isAdmin) return <Surface className="not-found"><h1>Acceso no autorizado</h1><p>Solo los administradores habilitados pueden ingresar a esta sección.</p></Surface>
   const newsletters = params.get('seccion') === 'newsletters'
   const navigation = <nav className="administration-section-nav" aria-label="Secciones de Administración"><button type="button" aria-current={!newsletters ? 'page' : undefined} onClick={() => setParams({})}>Directorio</button><button type="button" aria-current={newsletters ? 'page' : undefined} onClick={() => setParams({ seccion: 'newsletters' })}>Newsletters</button></nav>
-  return <div className="administration-page">{newsletters ? <>{navigation}<AdminNewsletterPanel /></> : <AdminDirectory navigation={navigation} />}</div>
+  return <div className="administration-page">{newsletters ? <AdminNewsletterPanel navigation={navigation} /> : <AdminDirectory navigation={navigation} />}</div>
 }

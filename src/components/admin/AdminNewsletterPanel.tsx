@@ -1,40 +1,52 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Check, MessageSquare, Archive, Trash2, XCircle, Star } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import type { ReactNode } from 'react'
+import { Archive, Clock3, FilePenLine, RotateCcw, Search, Send } from 'lucide-react'
 import { useCatalog } from '../../app/useCatalog'
-import { Button, PageHeading, Surface } from '../common/UI'
-import { StatusBadge } from '../newsletters/NewsletterParts'
-import type { NewsletterStatus } from '../../types'
-import { formatDate } from '../../utils/format'
-import { getNewsletterAuthor } from '../../utils/newsletterAuthor'
+import { Button, FilterSelect, Surface } from '../common/UI'
+import { AdminLoadState, AdminPagination } from './AdminPrimitives'
+import { useAdminQuery } from './useAdminQuery'
+import { getEditorialPage } from '../../services/editorial'
+import { EDITORIAL_FILTERS, EDITORIAL_TRAYS } from './editorialModel'
+import { EditorialTable } from './EditorialTable'
+import { EditorialReviewDialog } from './EditorialReviewDialog'
+import type { EditorialAction, EditorialFilters, EditorialTray } from '../../types/editorial'
+import './editorial.css'
+import { NEWSLETTER_STATUS_LABELS } from '../../utils/newsletterStatus'
 
-export function AdminNewsletterPanel() {
-  const { isAdmin, items, people, reviewNewsletter, deleteNewsletter } = useCatalog()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [note, setNote] = useState('')
-  const [featured, setFeatured] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [filter, setFilter] = useState<'pendientes' | 'todos'>('pendientes')
+export function AdminNewsletterPanel({ navigation }: { navigation?: ReactNode }) {
+  const { isAdmin } = useCatalog()
+  const [tray, setTray] = useState<EditorialTray>('pending')
+  const [filters, setFilters] = useState<EditorialFilters>({ ...EDITORIAL_FILTERS })
+  const [selected, setSelected] = useState<{ id: string; action?: EditorialAction; history?: boolean } | null>(null)
+  const load = useCallback(() => getEditorialPage(tray, filters), [tray, filters])
+  const query = useAdminQuery(load)
+  const close = useCallback(() => setSelected(null), [])
+  const selectTray = (next: EditorialTray) => { setTray(next); setFilters({ ...EDITORIAL_FILTERS }); setSelected(null) }
+  const change = (field: keyof EditorialFilters, value: string) => setFilters(previous => ({ ...previous, [field]: value, page: 1 }))
+  const options = (field: 'topic' | 'ministry' | 'author' | 'status' | 'sort', label: string, values: { id: string; name: string }[], empty?: string) => <label className="editorial-filter" key={field}>{label}<FilterSelect aria-label={label} value={filters[field]} onChange={event => change(field,event.target.value)}>{empty && <option value="">{empty}</option>}{values.map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</FilterSelect></label>
+  const asOptions = (values: string[]) => values.filter(Boolean).map(value => ({ id: value, name: value }))
   if (!isAdmin) return <Surface className="not-found"><h1>Acceso no autorizado</h1></Surface>
-  const rows = items.filter(item => filter === 'todos' || item.status === 'pendiente')
-  const selected = items.find(item => item.id === selectedId)
-  const choose = (id: string) => { const item = items.find(entry => entry.id === id); setSelectedId(id); setNote(item?.observation ?? ''); setFeatured(item?.featured ?? false); setError('') }
-  const review = async (status: NewsletterStatus) => {
-    if (!selected) return
-    if (['cambios', 'rechazado'].includes(status) && !note.trim()) { setError('Escribí una observación para solicitar cambios o rechazar.'); return }
-    setBusy(true); setError('')
-    try { await reviewNewsletter(selected.id, status, note.trim(), status === 'publicado' && featured); setSelectedId(null) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo guardar la revisión.') }
-    finally { setBusy(false) }
-  }
-  const remove = async () => {
-    if (!selected || !window.confirm('¿Eliminar definitivamente este newsletter?')) return
-    setBusy(true); setError('')
-    try { await deleteNewsletter(selected.id); setSelectedId(null) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo eliminar.') }
-    finally { setBusy(false) }
-  }
-
-  return <div className="page-stack"><Surface className="directory-intro"><PageHeading title="Administración editorial" subtitle="Revisá publicaciones y gestioná el contenido de la Red." actions={<div className="count-box"><MessageSquare size={24} /><strong>{items.filter(item => item.status === 'pendiente').length} pendientes<br />de revisión</strong></div>} /><div className="admin-shortcuts"><Link className="btn btn-yellow" to="/newsletters/nuevo">Crear newsletter</Link><Link className="btn btn-outline" to="/directorio">Gestionar directorio</Link><Link className="btn btn-outline" to="/administracion/direcciones-generales">Gestionar direcciones</Link></div></Surface><div className={`content-with-aside ${selected ? '' : 'without-aside'}`}><Surface className="directory-results"><div className="admin-filter"><Button onClick={() => setFilter('pendientes')} variant={filter === 'pendientes' ? 'primary' : 'outline'}>Pendientes</Button><Button onClick={() => setFilter('todos')} variant={filter === 'todos' ? 'primary' : 'outline'}>Todos</Button></div><div className="admin-newsletter-list">{rows.map(item => <button key={item.id} className={`admin-newsletter-row ${selectedId === item.id ? 'selected' : ''}`} onClick={() => choose(item.id)}><img src={item.image} alt="" /><span><strong>{item.title}</strong><small>{getNewsletterAuthor(item, people).name} · {formatDate(item.updatedAt)}</small></span><StatusBadge status={item.status} /></button>)}{rows.length === 0 && <div className="empty-results">No hay newsletters en esta bandeja.</div>}</div></Surface>{selected && <aside className="surface newsletter-panel"><div className="panel-heading"><h2>Revisión del newsletter</h2><button onClick={() => setSelectedId(null)} aria-label="Cerrar"><XCircle size={20} /></button></div><img className="admin-cover" src={selected.image} alt="Portada" /><StatusBadge status={selected.status} /><h3>{selected.title}</h3><p>{selected.subtitle}</p><Link className="btn btn-outline wide-btn" to={`/newsletters/${selected.id}`}>Leer completo</Link><label className="admin-note">Observaciones<textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="Motivo de los cambios o del rechazo" /></label><label className="admin-featured"><input type="checkbox" checked={featured} onChange={event => setFeatured(event.target.checked)} /><Star size={16} /> Destacar al publicar</label>{error && <p className="form-error" role="alert">{error}</p>}<div className="admin-review-actions"><Button variant="primary" disabled={busy} onClick={() => void review('publicado')}><Check size={16} /> Publicar</Button><Button disabled={busy} onClick={() => void review('cambios')}><MessageSquare size={16} /> Pedir cambios</Button><Button disabled={busy} onClick={() => void review('rechazado')}><XCircle size={16} /> Rechazar</Button><Button disabled={busy} onClick={() => void review('archivado')}><Archive size={16} /> Archivar</Button><Button disabled={busy} onClick={() => void remove()}><Trash2 size={16} /> Eliminar</Button></div></aside>}</div></div>
+  return <div className="editorial-page">
+    <Surface className="administration-intro"><div><h1>Administración</h1><p>Gestioná el contenido de la Red de Conexión Gerencial.</p></div><div className="administration-kpis">
+      {([{ id: 'pending', label: 'Pendientes de revisión', icon: Clock3 }, { id: 'changes', label: 'Cambios solicitados', icon: FilePenLine }, { id: 'published', label: 'Publicados', icon: Send }, { id: 'retired', label: 'Ocultos / archivados', icon: Archive }] as const).map(value => <button key={value.id} type="button" onClick={() => selectTray(value.id)}><span><value.icon size={23} /></span><div>{value.label}<strong>{query.data?.counts[value.id] ?? '—'}</strong></div></button>)}
+    </div></Surface>
+    {navigation}
+    <section className="surface editorial-tabs" role="tablist" aria-label="Bandejas editoriales" onKeyDown={event => { const index = EDITORIAL_TRAYS.findIndex(value => value.id === tray); const next = event.key === 'ArrowRight' ? (index+1)%5 : event.key === 'ArrowLeft' ? (index+4)%5 : event.key === 'Home' ? 0 : event.key === 'End' ? 4 : -1; if (next >= 0) { event.preventDefault(); selectTray(EDITORIAL_TRAYS[next].id); document.getElementById(`editorial-tab-${EDITORIAL_TRAYS[next].id}`)?.focus() } }}>
+      {EDITORIAL_TRAYS.map(value => <button type="button" role="tab" id={`editorial-tab-${value.id}`} aria-controls="editorial-inbox" aria-selected={tray === value.id} tabIndex={tray === value.id ? 0 : -1} key={value.id} onClick={() => selectTray(value.id)}>{value.label}</button>)}
+    </section>
+    <section className="surface editorial-inbox" role="tabpanel" id="editorial-inbox" aria-labelledby={`editorial-tab-${tray}`}>
+      <h2>{EDITORIAL_TRAYS.find(value => value.id === tray)?.heading}</h2><p className="editorial-inbox-description">{tray === 'pending' ? 'Revisá el contenido antes de su publicación.' : tray === 'changes' ? 'Esperando las correcciones y el reenvío del autor.' : tray === 'retired' ? 'Contenido retirado de circulación que podés restaurar.' : tray === 'published' ? 'Publicaciones visibles para la Red.' : 'Seguimiento de todas las publicaciones y propuestas.'}</p>
+      <div className="editorial-filters"><label className="search-input"><Search size={18} /><input aria-label="Buscar newsletters en Administración" value={filters.query} maxLength={150} onChange={event => change('query',event.target.value)} placeholder="Buscar por título, autor, organismo o contenido…" /></label>
+        {tray === 'all' && options('status','Estado editorial',Object.entries(NEWSLETTER_STATUS_LABELS).map(([id,name]) => ({ id,name })),'Todos los estados')}
+        {options('topic','Temática',asOptions(query.data?.topics ?? []),'Todas las temáticas')}
+        {options('ministry','Ministerio / Área rectora',asOptions(query.data?.ministries ?? []),'Todos los organismos')}
+        {options('author','Autor',query.data?.authors ?? [],'Todos los autores')}
+        {options('sort','Ordenar por',[{ id:'newest', name:'Más recientes' },{ id:'oldest', name:'Más antiguas' },{ id:'title', name:'Título A–Z' }])}
+        <Button onClick={() => setFilters({ ...EDITORIAL_FILTERS })} aria-label="Limpiar filtros editoriales"><RotateCcw size={16} /></Button>
+      </div>
+      <p role="status" className="editorial-results">{query.loading ? 'Consultando publicaciones…' : query.data ? `${query.data.total} ${query.data.total === 1 ? 'newsletter' : 'newsletters'}` : 'Consulta no disponible'}</p>
+      {query.loading || query.error ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Cargando bandeja editorial…" /> : query.data?.rows.length ? <><EditorialTable rows={query.data.rows} tray={tray} onReview={(id,action,history) => setSelected({ id,action,history })} /><AdminPagination page={filters.page} size={filters.pageSize} total={query.data.total} onPage={page => setFilters(previous => ({ ...previous,page }))} onSize={pageSize => setFilters(previous => ({ ...previous,pageSize,page:1 }))} /></> : <div className="administration-empty"><Archive size={30} /><h3>No hay newsletters en esta vista.</h3><Button onClick={() => setFilters({ ...EDITORIAL_FILTERS })}>Limpiar filtros</Button></div>}
+    </section>
+    {selected && <EditorialReviewDialog key={`${selected.id}-${selected.action}-${selected.history}`} id={selected.id} initialAction={selected.action} historyOpen={selected.history} onClose={close} onChanged={query.reload} />}
+  </div>
 }

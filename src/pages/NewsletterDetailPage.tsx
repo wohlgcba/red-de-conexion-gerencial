@@ -1,21 +1,23 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, Mail, Share2, UserRound } from 'lucide-react'
 import { useCatalog } from '../app/useCatalog'
 import { Avatar } from '../components/common/Avatar'
 import { Button, Chip, Surface } from '../components/common/UI'
 import { TopicChip } from '../components/newsletters/NewsletterParts'
 import { formatDate } from '../utils/format'
-import { getNewsletterAuthor } from '../utils/newsletterAuthor'
+import { getNewsletterAuthor, isOwnNewsletter } from '../utils/newsletterAuthor'
 import { NewsletterArticle } from '../components/newsletters/NewsletterArticle'
 import { NewsletterReactions } from '../components/newsletters/NewsletterReactions'
 
 export function NewsletterDetailPage() {
   const { id } = useParams()
-  const { items, people, currentPersonId, isAdmin } = useCatalog()
+  const [params] = useSearchParams()
+  const { items, people, currentPersonId, isAdmin, user } = useCatalog()
   const [shared, setShared] = useState(false)
-  const item = items.find(entry => entry.id === id)
-  if (!item || item.status !== 'publicado' && item.authorId !== currentPersonId && !isAdmin) return <Surface className="not-found"><h1>Newsletter no encontrado</h1><Link to="/newsletters">Volver a newsletters</Link></Surface>
+  const published = items.find(entry => entry.id === id)
+  const item = published && params.get('version') === 'propuesta' && isOwnNewsletter(published, currentPersonId, user.id) ? published.workingCopy ?? published : published
+  if (!item || item.status !== 'publicado' && !isOwnNewsletter(item, currentPersonId, user.id) && !isAdmin) return <Surface className="not-found"><h1>Newsletter no encontrado</h1><Link to="/newsletters">Volver a newsletters</Link></Surface>
   const author = getNewsletterAuthor(item, people)
   const related = items.filter(entry => entry.id !== item.id && entry.status === 'publicado' && entry.topic === item.topic).slice(0, 5)
   const share = async () => {

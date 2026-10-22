@@ -37,7 +37,7 @@ export function AdminDirectory({ navigation }: { navigation?: ReactNode }) {
   const showCount = (target: AdminTray) => { setTray(target); setView('requests'); setFiltersByTray(previous => ({ ...previous, [target]: { ...EMPTY_ADMIN_FILTERS, status: 'open' } })) }
   const selected = selection[tray] || null
   return <div className="administration-directory">
-    <Surface className="administration-intro"><div><h1>Administración del Directorio</h1><p>Revisá solicitudes de acceso, excepciones y cambios vinculados al Directorio de la Red.</p></div><div className="administration-kpis">
+    <Surface className="administration-intro"><div><h1>Administración</h1><p>Revisá solicitudes de acceso, excepciones y cambios vinculados al Directorio de la Red.</p></div><div className="administration-kpis">
       {([{ id: 'access', label: 'Pendientes de acceso', icon: UserRoundPlus }, { id: 'exceptions', label: 'Excepciones pendientes', icon: TriangleAlert }, { id: 'change', label: 'Cambios de datos', icon: FilePenLine }, { id: 'all', label: 'Total en revisión', icon: Clock3 }] as const).map(item => <button key={item.id} type="button" onClick={() => showCount(item.id)} aria-label={`${item.label}: ${query.data?.counts[item.id] ?? 'sin datos'}`}><span><item.icon size={23} /></span><div>{item.label}<strong>{query.data ? query.data.counts[item.id] : '—'}</strong></div></button>)}
     </div></Surface>
     {navigation}

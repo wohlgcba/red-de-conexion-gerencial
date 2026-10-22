@@ -1,4 +1,4 @@
-export type NewsletterStatus = 'borrador' | 'pendiente' | 'publicado' | 'cambios' | 'archivado' | 'rechazado'
+export type NewsletterStatus = 'borrador' | 'pendiente' | 'publicado' | 'cambios' | 'archivado' | 'rechazado' | 'oculto'
 
 export interface Person {
   id: string
@@ -54,4 +54,10 @@ export interface Newsletter {
   observation?: string
   imagePath?: string | null
   version?: number
+  workingCopy?: Newsletter
+  revisionId?: string
+  revisionNumber?: number
+  hasPublication?: boolean
+  canDeleteDraft?: boolean
+  visibility?: string
 }

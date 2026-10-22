@@ -7,14 +7,14 @@ import { formatDate } from '../../utils/format'
 import { getNewsletterAuthor } from '../../utils/newsletterAuthor'
 import type { Newsletter, NewsletterStatus } from '../../types'
 import { NewsletterReactions } from './NewsletterReactions'
+import { NEWSLETTER_STATUS_LABELS } from '../../utils/newsletterStatus'
 
 const tones: Record<string, 'blue' | 'mint' | 'purple' | 'green'> = { 'Innovación pública': 'blue', 'Innovación': 'blue', 'Gestión': 'mint', 'Participación': 'purple', 'Ambiente': 'green', 'Datos': 'blue', 'Procesos': 'blue', 'Proyectos': 'blue' }
 
 export function TopicChip({ topic }: { topic: string }) { return <Chip tone={tones[topic] ?? 'blue'}>{topic}</Chip> }
 
 export function StatusBadge({ status }: { status: NewsletterStatus }) {
-  const label: Record<NewsletterStatus, string> = { borrador: 'Borrador', pendiente: 'Pendiente de revisión', publicado: 'Publicado', cambios: 'Cambios solicitados', archivado: 'Archivado', rechazado: 'Rechazado' }
-  return <span className={`status status-${status}`}>{label[status]}</span>
+  return <span className={`status status-${status}`}>{NEWSLETTER_STATUS_LABELS[status]}</span>
 }
 
 export function NewsletterCard({ item }: { item: Newsletter }) {
