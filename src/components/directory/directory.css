@@ -101,6 +101,10 @@
 .directory-profile-contact span { min-width: 0; overflow-wrap: anywhere; }
 .directory-profile-contact small { display: block; font-size: 10.8px; color: #6786a2; margin-bottom: 4px; }
 .directory-profile-contact a:hover { text-decoration: underline; }
+.directory-contact-value { flex: 1; }
+.directory-contact-copy { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; max-width: 125px; }
+.directory-contact-copy .btn { min-width: 78px; min-height: 34px; gap: 5px; padding: 6px 8px; font-size: 12px; white-space: nowrap; }
+.directory-contact-copy small[role="alert"] { font-size: 12px; line-height: 1.4; margin: 0; }
 .directory-profile-newsletters { display: flex; flex-direction: column; gap: 9px; }
 .directory-profile-newsletters > a { display: flex; align-items: center; gap: 12px; padding: 9px; border: 1px solid #e1edf6; border-radius: 9px; min-width: 0; }
 .directory-profile-newsletters > a:hover { background: #f4fbff; border-color: #b5d7ed; }
