@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import { parseMailto } from './emailCompose'
 
 export const NEWSLETTER_TEXT_LIMIT = 5000
 export const NEWSLETTER_HTML_LIMIT = 60000
@@ -8,7 +9,7 @@ export function normalizeNewsletterLink(value: string): string | null {
   if (!input || Array.from(input).some(character => character.charCodeAt(0) <= 32 || character.charCodeAt(0) === 127)) return null
   try {
     const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(input) ? input : `https://${input}`)
-    if (url.protocol === 'mailto:') return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(url.pathname) ? url.href : null
+    if (url.protocol === 'mailto:') { parseMailto(url.href); return url.href }
     if (!['https:', 'http:'].includes(url.protocol) || !url.hostname || url.username || url.password) return null
     return url.href
   } catch { return null }

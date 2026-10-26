@@ -1,3 +1,4 @@
+import { emailHref } from '../../utils/emailCompose'
 import { useCallback, useRef, useEffect, useState } from 'react'
 import { Check, Copy, Mail, Phone, RefreshCw, Send } from 'lucide-react'
 import { Button, FilterSelect } from '../common/UI'
@@ -54,14 +55,14 @@ function CandidateContactsContent({ id, name }: { id: string; name: string }) {
   return <>
     <ul className="dotacion-contact-list">{query.data.contacts.map(contact => <li key={`${contact.kind}:${contact.value}`}>
       {contact.kind === 'email' ? <Mail size={17} aria-hidden="true" /> : <Phone size={17} aria-hidden="true" />}
-      <div><span>{contact.label}</span><a href={contact.kind === 'email' ? `mailto:${encodeURIComponent(contact.value)}` : `tel:${contact.value.replace(/[^+\d]/g, '')}`}>{contact.value}</a></div>
+      <div><span>{contact.label}</span><a href={contact.kind === 'email' ? emailHref(contact.value) : `tel:${contact.value.replace(/[^+\d]/g, '')}`}>{contact.value}</a></div>
       {contact.kind === 'email' && <CopyEmailButton email={contact.value} />}
     </li>)}</ul>
     {emails.length ? <div className="dotacion-invitation">
       <label>Enviar invitación a<FilterSelect aria-label="Correo del candidato para la invitación" value={selected} onChange={event => { setChosenEmail(event.target.value); setCopyMessage('') }}>{emails.map(email => <option key={email.value} value={email.value}>{email.label}: {email.value}</option>)}</FilterSelect></label>
       <details><summary>Ver mensaje de invitación</summary><strong>{invitation.subject}</strong><p>{invitation.body}</p></details>
       <div className="dotacion-invitation-actions"><a className="btn btn-primary" href={invitationMailto(selected, invitation)}><Send size={16} /> Preparar invitación</a><Button onClick={() => void copy()}><Copy size={15} /> Copiar invitación</Button></div>
-      <p className="dotacion-contact-note">Se abrirá tu correo para revisar y enviar el mensaje. El enlace permite solicitar el ingreso; no habilita acceso automáticamente.</p>
+      <p className="dotacion-contact-note">Elegí Gmail u Outlook para revisar y enviar el mensaje. El enlace permite solicitar el ingreso; no habilita acceso automáticamente.</p>
       {copyMessage && <p role="status" className="dotacion-contact-status">{copyMessage}</p>}
     </div> : <p className="dotacion-contact-status">No hay un correo válido para preparar la invitación.</p>}
     <p className="dotacion-contact-note">Contactos visibles únicamente para administradores. Última lectura de Dotación: {new Date(query.data.consultedAt).toLocaleString('es-AR')}.</p>

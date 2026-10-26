@@ -1,3 +1,4 @@
+import { emailHref } from '../../utils/emailCompose'
 import { Info, Mail, Phone, UserRound } from 'lucide-react'
 import { useCatalog } from '../../app/useCatalog'
 import { Avatar } from '../common/Avatar'
@@ -28,7 +29,7 @@ export function OrganizationResponsibleCard({ assignment, pending = false, ident
       {assignment?.validityBasis && <small>{assignment.validityBasis}</small>}
       {!assignment && reason && <small>{reason}</small>}
       <small className="organization-responsible-origin">{direct ? 'Responsable directo' : 'Unidad dependiente'} · {unitName}</small>
-      {membership === 'member' && person ? <div className="organization-contact-row"><span>{person.email && <a href={`mailto:${person.email}`}><Mail size={14} />{person.email}</a>}{person.phone && <a href={`tel:${person.phone.replace(/[^+\d]/g, '')}`}><Phone size={14} />{person.phone}</a>}</span><Button onClick={() => onProfile(person)}><UserRound size={14} /> Ver perfil en Directorio</Button></div>
+      {membership === 'member' && person ? <div className="organization-contact-row"><span>{person.email && <a href={emailHref(person.email)}><Mail size={14} />{person.email}</a>}{person.phone && <a href={`tel:${person.phone.replace(/[^+\d]/g, '')}`}><Phone size={14} />{person.phone}</a>}</span><Button onClick={() => onProfile(person)}><UserRound size={14} /> Ver perfil en Directorio</Button></div>
         : assignment && <span className="organization-no-profile"><Info size={13} />{membership === 'non_member' ? 'Sin perfil en la Red' : 'La vinculación con el Directorio está pendiente de verificación.'}</span>}
     </div>
   </article>

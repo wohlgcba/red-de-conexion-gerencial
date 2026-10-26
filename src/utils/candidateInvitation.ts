@@ -1,3 +1,5 @@
+import { emailHref } from './emailCompose.ts'
+
 export function candidateInvitation(name: string, origin: string) {
   const formUrl = new URL('/solicitar-acceso', origin).href
   const subject = 'Invitación a la Red de Conexión Gerencial'
@@ -5,5 +7,5 @@ export function candidateInvitation(name: string, origin: string) {
   return { subject, body, formUrl }
 }
 export function invitationMailto(email: string, invitation: ReturnType<typeof candidateInvitation>) {
-  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(invitation.subject)}&body=${encodeURIComponent(invitation.body)}`
+  return emailHref(email, invitation)
 }
