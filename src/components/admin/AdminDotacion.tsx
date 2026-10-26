@@ -8,7 +8,6 @@ import { DirectoryProfileModal } from '../directory/DirectoryProfileModal'
 import { AdminBadge, AdminLoadState, AdminPagination } from './AdminPrimitives'
 import { useAdminQuery } from './useAdminQuery'
 import { AdminCandidateContacts } from './AdminCandidateContacts'
-import { AdminOrganizationAuthorities } from './AdminOrganizationAuthorities'
 import { getDotacionComparison, refreshDotacionSnapshot } from '../../services/dotacion'
 import type { DotacionComparison, DotacionFilters, DotacionStatus, InstitutionalAssignment } from '../../types/dotacion'
 import './dotacion.css'
@@ -30,11 +29,6 @@ function Assignment({ value, detailed = false }: { value: InstitutionalAssignmen
 }
 
 export function AdminDotacion({ onReview }: { onReview: (name: string) => void }) {
-  const [view, setView] = useState<'directory' | 'authorities'>('directory')
-  return <><div className="authority-view-switch" aria-label="Consultas de Dotación"><Button aria-pressed={view === 'directory'} variant={view === 'directory' ? 'primary' : 'outline'} onClick={() => setView('directory')}>Directorio y candidatos</Button><Button aria-pressed={view === 'authorities'} variant={view === 'authorities' ? 'primary' : 'outline'} onClick={() => setView('authorities')}>Autoridades del Organigrama</Button></div>{view === 'authorities' ? <AdminOrganizationAuthorities /> : <DotacionComparison onReview={onReview} />}</>
-}
-
-function DotacionComparison({ onReview }: { onReview: (name: string) => void }) {
   const [filters, setFilters] = useState<DotacionFilters>(EMPTY)
   const controller = useRef<AbortController | null>(null)
   const load = useCallback(() => {

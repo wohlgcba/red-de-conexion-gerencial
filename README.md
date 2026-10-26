@@ -13,6 +13,11 @@ datos personales no se versionan. Las 350 Direcciones Generales derivadas del
 texto original conservan variantes de escritura para evitar fusiones erróneas.
 Los newsletters comienzan vacíos y se crean desde la aplicación.
 
+El Organigrama se conserva como proyecto independiente en la carpeta hermana
+`Organigrama GCBA`, con su propia aplicación, scripts y pruebas. La Red ya no
+incluye esa sección ni la revisión de autoridades. Sus migraciones históricas
+se conservan para compatibilidad con la base y las pruebas del Directorio.
+
 `supabase/red_conexion_gerencial.sql` contiene la base inicial y
 `supabase/rcg_crud.sql` agrega las tablas, funciones, permisos y políticas del
 CRUD. `supabase/rcg_grant_admin.sql` habilita la cuenta administradora una vez
