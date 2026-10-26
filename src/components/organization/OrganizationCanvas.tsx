@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Background, BackgroundVariant, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow, useViewport } from '@xyflow/react'
+import { Background, BackgroundVariant, MarkerType, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow, useViewport } from '@xyflow/react'
 import { Focus, Maximize, Minus, Move, Plus, RotateCcw } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
 import { Button } from '../common/UI'
@@ -39,6 +39,7 @@ function CanvasContent(props: OrganizationCanvasProps) {
   const [columns, setColumns] = useState(4)
   const [ready, setReady] = useState(false)
   const flow = useReactFlow<ChartNode>()
+  const { zoom } = useViewport()
   const lastSize = useRef<{ width: number; height: number } | null>(null)
   const path = useMemo(() => new Set((index.path.get(selectedId) ?? []).map(unit => unit.id)), [index, selectedId])
   useEffect(() => {
@@ -69,7 +70,23 @@ function CanvasContent(props: OrganizationCanvasProps) {
     return { id: unit.id, type: 'organization', data, position: positions.get(unit.id)!, width: NODE_WIDTH, height: NODE_HEIGHT, style: { width: NODE_WIDTH, height: NODE_HEIGHT, pointerEvents: 'all' }, selected: unit.id === selectedId, draggable: false, connectable: false, selectable: false, focusable: false }
   }), [graph, index, peopleById, expanded, path, positions, selectedId, onActivate, onToggle, onDetail, onMore, keyboardFocus])
   const nodes = useAnimatedGraphNodes(targetNodes, reducedMotion)
-  const edges = useMemo(() => graph.edges.map(edge => ({ ...edge, type: 'smoothstep', selectable: false, focusable: false, pathOptions: { borderRadius: 5 }, style: { stroke: path.has(edge.source) && path.has(edge.target) ? '#1683c6' : '#95afc4', strokeWidth: path.has(edge.target) ? 2 : 1.4 } })), [graph, path])
+  const baseEdges = useMemo(() => graph.edges.map(edge => {
+    const active = path.has(edge.source) && path.has(edge.target)
+    const color = active ? '#0075bb' : path.size ? '#bdcbd6' : '#829fb7'
+    return { ...edge, type: 'smoothstep', selectable: false, focusable: false,
+      className: active ? 'organization-route-active' : undefined,
+      animated: active && !reducedMotion, zIndex: active ? 2 : 0,
+      pathOptions: { borderRadius: 5 },
+      markerEnd: { type: MarkerType.ArrowClosed, color, width: active ? 22 : 16, height: active ? 22 : 16, markerUnits: 'userSpaceOnUse' },
+      style: { stroke: color, strokeWidth: active ? 4 : 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, vectorEffect: 'non-scaling-stroke' as const },
+    }
+  }), [graph, path, reducedMotion])
+  // React Flow scales its HTML viewport: compensate route geometry to keep it legible at any zoom.
+  const edges = useMemo(() => baseEdges.map(edge => edge.className ? {
+    ...edge,
+    markerEnd: { ...edge.markerEnd, width: 18 / zoom, height: 18 / zoom },
+    style: { ...edge.style, strokeWidth: 3 / zoom, strokeDasharray: reducedMotion ? undefined : `${12 / zoom} ${7 / zoom}`, '--organization-route-step': `${19 / zoom}px` },
+  } : edge), [baseEdges, zoom, reducedMotion])
   const positionsRef = useRef(positions)
   const previousPositions = useRef(positions)
   const applied = useRef(-1)
