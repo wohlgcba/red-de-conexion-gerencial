@@ -77,7 +77,7 @@ function Charts({ data }: { data: MetricsOverview }) {
 function Rankings({ data }: { data: MetricsOverview }) {
   const { summary } = data
   const newsletters = data.newsletters.map(item => ({ id: item.id, label: item.title, value: item.readers,
-    detail: `${item.topic} · ${formatNumber(item.views)} ${item.views === 1 ? 'apertura' : 'aperturas'} · ${formatNumber(item.reactions)} ${item.reactions === 1 ? 'reacción' : 'reacciones'}${item.status !== 'publicado' ? ' · ya no está publicado' : ''}` }))
+    detail: `${item.topic} · ${formatNumber(item.views)} ${item.views === 1 ? 'apertura' : 'aperturas'} · ${formatNumber(item.reactions)} ${item.reactions === 1 ? 'reacción' : 'reacciones'}${item.status !== 'publicado' ? ' · ya no está publicado' : ''}${item.demo ? ' · lecturas de prueba' : ''}` }))
   const terms = data.directory.topTerms.map(item => ({ id: item.term, label: item.term, value: item.searches,
     detail: `${formatNumber(item.people)} ${item.people === 1 ? 'persona' : 'personas'} · ${formatNumber(item.results ?? 0)} resultados en promedio` }))
   return <div className="metrics-rankings">

@@ -21,7 +21,7 @@ export interface MetricsSummary {
 
 export interface GrowthBucket { starts: string; gerente: number; subgerente: number; otro: number; joined: number; left: number }
 export interface ActivityBucket { starts: string; visitors: number; newsletterVisitors: number; directoryUsers: number; newsletterViews: number; searches: number; profileViews: number }
-export interface NewsletterMetric { id: string; title: string; topic: string; status: string; publishedAt: string | null; readers: number; views: number; reactions: number; lastViewedAt: string | null }
+export interface NewsletterMetric { id: string; title: string; topic: string; status: string; publishedAt: string | null; readers: number; views: number; reactions: number; lastViewedAt: string | null; demo: boolean }
 
 export interface MetricsCoverage { syncedAt: string; managers: number; covered: number; gerentes: { total: number; covered: number }; subgerentes: { total: number; covered: number } }
 export interface SearchTerm { term: string; searches: number; people: number; results?: number }

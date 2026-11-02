@@ -110,6 +110,14 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  const {syncedAt,...coverage}=(await rpc('admin_metrics',['month'])).coverage;assert.equal(new Date(syncedAt).toISOString(),'2026-10-20T14:16:00.000Z')
  assert.deepEqual(coverage,{managers:3,covered:2,gerentes:{total:1,covered:1},subgerentes:{total:2,covered:1}},'mock members do not count')
  await assert.rejects(()=>rpc('admin_set_metrics_universe',[1400]))
+ // Demonstration reads only reach MOCK posts and never people or totals.
+ await db.exec('reset role')
+ await db.query("update red_conexion_gerencial.newsletters set tags='{MOCK}' where id=$1",[other])
+ await db.query('insert into rcg_private.metrics_demo_reads(newsletter_id,readers,views) values($1,40,55),($2,500,600)',[other,published])
+ await actor(1)
+ const demo=await rpc('admin_metrics',['month'])
+ assert.deepEqual(demo.newsletters.map(n=>[n.title,n.readers,n.views,n.demo]),[['Menos leído',40,55,true],['Más leído',2,3,false]])
+ assert.equal(demo.summary.newsletterReaders,2);assert.equal(demo.summary.entered,3)
 
  // Previous Red workbook: matched by email, rerunnable, departures without personal data.
  await db.exec('reset role')

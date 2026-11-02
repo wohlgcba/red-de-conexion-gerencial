@@ -7,7 +7,7 @@ import { formatNumber } from './metricsModel'
 export type RankingItem = { id: string; label: string; detail: string; value: number }
 type Props = { id?: string; title: string; description: ReactNode; items: RankingItem[]; unit: [string, string]; color: string; empty: string }
 
-const PLACES = [1, 0, 2] // Second, first, third: the podium reads left to right.
+const PLACES = [3, 1, 0, 2, 4] // Top five with the winner in the middle, decreasing outwards.
 const plural = (value: number, [one, many]: [string, string]) => `${formatNumber(value)} ${value === 1 ? one : many}`
 
 export function MetricsRanking({ id, title, description, items, unit, color, empty }: Props) {
@@ -26,11 +26,11 @@ export function MetricsRanking({ id, title, description, items, unit, color, emp
           <ol className="metrics-podium">{PLACES.map(index => {
             const item = ranked[index]
             return item ? <li key={item.id} className={`metrics-podium-place place-${index + 1}`} aria-label={`Puesto ${index + 1}: ${item.label}, ${plural(item.value, unit)}`}>
-              <div className="metrics-podium-entry"><Medal size={22} aria-hidden="true" /><strong title={item.label}>{item.label}</strong><small>{item.detail}</small><b>{plural(item.value, unit)}</b></div>
+              <div className="metrics-podium-entry">{index < 3 && <Medal size={20} aria-hidden="true" />}<strong title={item.label}>{item.label}</strong><small>{item.detail}</small><b>{plural(item.value, unit)}</b></div>
               <div className="metrics-podium-step" aria-hidden="true">{index + 1}</div>
             </li> : <li key={`empty-${index}`} className={`metrics-podium-place place-${index + 1} is-empty`} aria-hidden="true"><div className="metrics-podium-step" /></li>
           })}</ol>
-          {ranked.length > 3 && <ol className="metrics-podium-rest" start={4}>{ranked.slice(3, 8).map(item => <li key={item.id}><span title={item.label}>{item.label}</span><b>{plural(item.value, unit)}</b></li>)}</ol>}
+          {ranked.length > 5 && <ol className="metrics-podium-rest" start={6}>{ranked.slice(5, 10).map(item => <li key={item.id}><span title={item.label}>{item.label}</span><b>{plural(item.value, unit)}</b></li>)}</ol>}
         </>
         : <ol className="metrics-ranking">{items.map((item, index) => <li key={item.id}>
           <span className="metrics-rank">{index + 1}</span>

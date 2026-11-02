@@ -44,12 +44,21 @@ create table if not exists rcg_private.metrics_departures (
   source text not null default 'xlsx' check (source in ('xlsx'))
 );
 
+-- Demonstration reads for the fictional MOCK posts only, never attributed to people and only added to the
+-- newsletter ranking. Remove them with: delete from rcg_private.metrics_demo_reads;
+create table if not exists rcg_private.metrics_demo_reads (
+  newsletter_id uuid primary key references red_conexion_gerencial.newsletters(id) on delete cascade,
+  readers integer not null check (readers >= 0),
+  views integer not null check (views >= readers),
+  created_at timestamptz not null default now()
+);
+
 -- Coverage comes from the saved Dotación snapshot; the former editable universe is removed.
 drop function if exists red_conexion_gerencial.admin_set_metrics_universe(integer);
 drop table if exists rcg_private.metrics_settings;
 
 do $$ declare t text; begin
-  foreach t in array array['member_activity','directory_searches','metrics_departures'] loop
+  foreach t in array array['member_activity','directory_searches','metrics_departures','metrics_demo_reads'] loop
     execute format('alter table rcg_private.%I enable row level security', t);
     execute format('revoke all on rcg_private.%I from public, anon, authenticated, service_role', t);
   end loop;
@@ -204,11 +213,13 @@ begin
       from buckets b),
     'newsletters', coalesce((select jsonb_agg(x order by (x->>'readers')::int desc, (x->>'views')::int desc, x->>'publishedAt' desc nulls last) from (
       select jsonb_build_object('id', n.id, 'title', n.title, 'topic', n.topic, 'status', n.status, 'publishedAt', n.published_at,
-        'readers', (select count(distinct a.person_id) from activity a where a.newsletter_id = n.id),
-        'views', (select coalesce(sum(a.hits), 0) from activity a where a.newsletter_id = n.id),
+        'readers', (select count(distinct a.person_id) from activity a where a.newsletter_id = n.id) + coalesce(d.readers, 0),
+        'views', (select coalesce(sum(a.hits), 0) from activity a where a.newsletter_id = n.id) + coalesce(d.views, 0),
+        'demo', d.newsletter_id is not null,
         'lastViewedAt', (select max(a.last_at) from activity a where a.newsletter_id = n.id),
         'reactions', (select count(*) from red_conexion_gerencial.newsletter_reactions r where r.newsletter_id = n.id)) as x
       from red_conexion_gerencial.newsletters n
+      left join rcg_private.metrics_demo_reads d on d.newsletter_id = n.id and 'MOCK' = any(n.tags)
       where n.status = 'publicado' or exists(select 1 from activity a where a.newsletter_id = n.id)
       order by n.published_at desc nulls last limit 100) ranked), '[]'),
     'directory', jsonb_build_object(
