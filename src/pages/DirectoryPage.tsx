@@ -12,10 +12,11 @@ import { PersonEditor } from '../components/directory/PersonEditor'
 import { changeDirectoryFilter, directoryOptions, DIRECTORY_PAGE_SIZE, EMPTY_DIRECTORY_FILTERS, getDirectoryResults, representedDirectorates } from '../components/directory/directoryModel'
 import type { DirectoryFilters as Filters, DirectorySort } from '../components/directory/directoryModel'
 import type { Person } from '../types'
+import { recordActivity, recordSearch } from '../services/metrics'
 import '../components/directory/directory.css'
 
 export function DirectoryPage() {
-  const { people, items, directorates, isAdmin, savePerson, deletePerson } = useCatalog()
+  const { people, items, directorates, isAdmin, savePerson, deletePerson, user } = useCatalog()
   const [params, setParams] = useSearchParams()
   const [editing, setEditing] = useState<Person | 'new' | null>(null)
   const [confirmation, setConfirmation] = useState<{ type: 'edit' | 'delete'; person: Person } | null>(null)
@@ -47,6 +48,16 @@ export function DirectoryPage() {
     setConfirmation(null)
     setConfirmationError('')
   }, [])
+  const selectedId = selected?.id
+  const resultCount = filtered.length
+  useEffect(() => { if (selectedId) recordActivity(user.id, 'profile', selectedId) }, [user.id, selectedId])
+  // A search counts once the person stops typing.
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) return
+    const timer = window.setTimeout(() => recordSearch(term, resultCount), 1500)
+    return () => window.clearTimeout(timer)
+  }, [query, resultCount])
   useEffect(() => {
     if (!toast) return
     searchInput.current?.focus()

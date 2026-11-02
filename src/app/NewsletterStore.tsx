@@ -7,6 +7,7 @@ import { requireSupabase, supabase } from '../lib/supabase'
 import * as catalog from '../services/catalog'
 import * as profilePhotos from '../services/profilePhotos'
 import { getMyDirectoryGate } from '../services/administration'
+import { recordActivity } from '../services/metrics'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 import { DirectoryLoading } from '../components/directory/DirectoryLoading'
@@ -159,6 +160,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
       if (isCurrent()) setDataLoading(false)
     }
   }, [userId, sessionVersion])
+
+  useEffect(() => { if (userId) recordActivity(userId, 'visit') }, [userId])
 
   useEffect(() => {
     if (!userId) return

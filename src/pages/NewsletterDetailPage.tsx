@@ -1,5 +1,5 @@
 import { emailHref } from '../utils/emailCompose'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, Mail, Share2, UserRound } from 'lucide-react'
 import { useCatalog } from '../app/useCatalog'
@@ -10,6 +10,7 @@ import { formatDate } from '../utils/format'
 import { getNewsletterAuthor, isOwnNewsletter } from '../utils/newsletterAuthor'
 import { NewsletterArticle } from '../components/newsletters/NewsletterArticle'
 import { NewsletterReactions } from '../components/newsletters/NewsletterReactions'
+import { recordActivity } from '../services/metrics'
 
 export function NewsletterDetailPage() {
   const { id } = useParams()
@@ -17,6 +18,8 @@ export function NewsletterDetailPage() {
   const { items, people, currentPersonId, isAdmin, user } = useCatalog()
   const [shared, setShared] = useState(false)
   const published = items.find(entry => entry.id === id)
+  const publicId = published?.status === 'publicado' ? published.id : undefined
+  useEffect(() => { if (publicId) recordActivity(user.id, 'newsletter', publicId) }, [user.id, publicId])
   const item = published && params.get('version') === 'propuesta' && isOwnNewsletter(published, currentPersonId, user.id) ? published.workingCopy ?? published : published
   if (!item || item.status !== 'publicado' && !isOwnNewsletter(item, currentPersonId, user.id) && !isAdmin) return <Surface className="not-found"><h1>Newsletter no encontrado</h1><Link to="/newsletters">Volver a newsletters</Link></Surface>
   const author = getNewsletterAuthor(item, people)

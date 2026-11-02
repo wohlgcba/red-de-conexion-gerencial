@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Archive, PencilLine, SlidersHorizontal, UserRound } from 'lucide-react'
 import { Button, FilterSelect, PageHeading, SearchInput, Surface } from '../components/common/UI'
@@ -6,9 +6,11 @@ import { FeaturedNewsletter, NewsletterCard } from '../components/newsletters/Ne
 import { useCatalog } from '../app/useCatalog'
 import { norm } from '../utils/format'
 import { getNewsletterAuthor } from '../utils/newsletterAuthor'
+import { recordActivity } from '../services/metrics'
 
 export function NewslettersPage() {
-  const { people, currentPersonId, isAdmin, items } = useCatalog()
+  const { people, currentPersonId, isAdmin, items, user } = useCatalog()
+  useEffect(() => recordActivity(user.id, 'newsletters'), [user.id])
   const published = items.filter(item => item.status === 'publicado')
   const featured = published.find(item => item.featured) ?? published[0]
   const [query, setQuery] = useState('')
