@@ -42,7 +42,7 @@ export function MetricsPeople({ filters, onChange }: Props) {
       </div>
       <div className="administration-results-meta"><p role="status">{exporting || (query.loading ? 'Consultando…' : query.data ? `${formatNumber(query.data.total)} ${query.data.total === 1 ? 'integrante' : 'integrantes'}` : 'Consulta no disponible')}</p><Button onClick={query.reload} disabled={query.loading} aria-label="Actualizar integrantes"><RefreshCw size={15} /></Button></div>
       {query.loading || query.error ? <AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Cargando integrantes…" errorTitle="No pudimos cargar los integrantes" />
-        : query.data?.rows.length ? <><div className="administration-table-scroll"><table className="administration-table metrics-people-table"><thead><tr><th>Integrante</th><th>Cargo</th><th>Organismo</th><th>Cuenta</th><th>Último ingreso</th><th>Días activos</th><th>Newsletters leídos</th><th>Uso del Directorio</th></tr></thead>
+        : query.data?.rows.length ? <><div className="administration-table-scroll"><table className="administration-table metrics-people-table"><thead><tr><th>Integrante</th><th>Cargo</th><th>Organismo</th><th>Cuenta</th><th>Último ingreso</th><th>Días activos</th><th>Newsletters leídos</th></tr></thead>
           <tbody>{query.data.rows.map(row => <tr key={row.id}>
             <td><div className="administration-person"><span><strong>{row.name}</strong><small>{row.email}</small></span></div></td>
             <td>{row.role}<small>{LEVELS.find(level => level.id === row.level)?.label} · inscripción {formatShortDate(row.joinedOn)}</small></td>
@@ -51,7 +51,6 @@ export function MetricsPeople({ filters, onChange }: Props) {
             <td className="administration-date">{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'Nunca'}</td>
             <td className="metrics-number">{formatNumber(row.activeDays)}</td>
             <td className="metrics-number">{formatNumber(row.newslettersRead)}</td>
-            <td className="metrics-number">{formatNumber(row.directoryUses)}</td>
           </tr>)}</tbody></table></div>
           <AdminPagination page={filters.page} total={query.data.total} size={filters.pageSize} onPage={page => change('page', page)} onSize={size => onChange({ ...filters, pageSize: size, page: 1 })} /></>
         : <div className="administration-empty"><UserRoundX size={30} /><h3>No hay integrantes con estos filtros.</h3><Button onClick={() => onChange({ ...EMPTY_PEOPLE_FILTERS })}>Limpiar filtros</Button></div>}

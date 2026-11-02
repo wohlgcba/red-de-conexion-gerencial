@@ -40,8 +40,8 @@ export const formatShortDate = (iso: string | null) => iso ? fmt(iso, { day: 'nu
 // Semicolon and BOM: the format Excel in Spanish opens without asking.
 export function peopleCsv(rows: MetricsPerson[]) {
   const cell = (value: string | number) => { const text = String(value).replace(/^([=+\-@])/, "'$1"); return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text }
-  const header = ['Nombre', 'Correo', 'Cargo', 'Nivel', 'Organismo', 'Dirección General', 'Inscripción', 'Cuenta', 'Primer ingreso', 'Último ingreso', 'Días con actividad', 'Newsletters leídos', 'Búsquedas y perfiles abiertos']
+  const header = ['Nombre', 'Correo', 'Cargo', 'Nivel', 'Organismo', 'Dirección General', 'Inscripción', 'Cuenta', 'Primer ingreso', 'Último ingreso', 'Días con actividad', 'Newsletters leídos']
   const lines = rows.map(row => [row.name, row.email, row.role, LEVELS.find(level => level.id === row.level)?.label ?? '', row.ministry, row.directorate, row.joinedOn,
-    ACCOUNT_LABELS[row.account], formatDateTime(row.firstActivityAt), formatDateTime(row.lastActivityAt), row.activeDays, row.newslettersRead, row.directoryUses])
+    ACCOUNT_LABELS[row.account], formatDateTime(row.firstActivityAt), formatDateTime(row.lastActivityAt), row.activeDays, row.newslettersRead])
   return `﻿${[header, ...lines].map(line => line.map(cell).join(';')).join('\r\n')}`
 }

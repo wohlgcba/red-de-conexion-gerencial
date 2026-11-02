@@ -29,8 +29,8 @@ anónimos, limita la escritura del directorio a administradores y vincula cada
 newsletter a la identidad del autor. Las portadas se almacenan en el bucket
 privado `rcg-newsletters`.
 
-Administración > Métricas muestra la evolución de integrantes por cargo, los
-ingresos a la Red, el uso de Newsletters y del Directorio, y quiénes nunca
+La sección Métricas (solo administradores) muestra la evolución de integrantes por cargo, los
+ingresos a la Red, el uso de Newsletters y quiénes nunca
 ingresaron. `supabase/rcg_metrics.sql` registra la actividad agregada por
 persona y día en `rcg_private`; `scripts/import_metrics_history.py` aplica la
 migración y carga la historia de la Red anterior desde el XLSX local (ensayo

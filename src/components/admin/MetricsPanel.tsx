@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
-import { BookOpenText, ChartColumn, Info, LogIn, PencilLine, RefreshCw, SearchX, Table2, UserRoundX, UsersRound } from 'lucide-react'
+import { BookOpenText, ChartColumn, Info, LogIn, PencilLine, RefreshCw, Table2, UserRoundX, UsersRound } from 'lucide-react'
 import { Button, Surface } from '../common/UI'
 import { AdminLoadState } from './AdminPrimitives'
 import { useAdminQuery } from './useAdminQuery'
@@ -16,7 +16,6 @@ import './metrics.css'
 const ACTIVITY: ChartSeries[] = [
   { key: 'visitors', label: 'Ingresaron a la Red', color: 'var(--metrics-visit)' },
   { key: 'newsletterVisitors', label: 'Entraron a Newsletters', color: 'var(--metrics-newsletter)' },
-  { key: 'directoryUsers', label: 'Usaron el Directorio', color: 'var(--metrics-directory)' },
 ]
 const GROWTH: ChartSeries[] = LEVELS.map(level => ({ key: level.id, label: level.plural, color: level.color }))
 
@@ -67,7 +66,7 @@ function Charts({ data, onEditUniverse }: { data: MetricsOverview; onEditUnivers
   }
   const activityExtra = (index: number) => {
     const bucket = data.activity[index]
-    return [`Aperturas de newsletters: ${formatNumber(bucket.newsletterViews)}`, `Búsquedas: ${formatNumber(bucket.searches)} · perfiles abiertos: ${formatNumber(bucket.profileViews)}`]
+    return [`Aperturas de newsletters: ${formatNumber(bucket.newsletterViews)}`]
   }
   const range = GRANULARITIES.find(item => item.id === data.granularity)?.phrase
   const sources = [data.historySince && data.historyUntil && `Red anterior: del ${formatShortDate(data.historySince)} al ${formatShortDate(data.historyUntil)}.`,
@@ -80,11 +79,11 @@ function Charts({ data, onEditUniverse }: { data: MetricsOverview; onEditUnivers
         values={data.growth.map(bucket => [bucket.gerente, bucket.subgerente, bucket.otro])} extra={growthExtra} endLabel={formatNumber(total)} />
       <Coverage members={data.summary.members} universe={data.universe} onEdit={onEditUniverse} />
     </ChartCard>
-    <ChartCard title="Ingresos a la Red" description={<>Personas distintas que entraron en cada período y qué usaron. {sources}</>}
-      table={<table className="administration-table"><thead><tr><th>Período</th>{ACTIVITY.map(item => <th key={item.key}>{item.label}</th>)}<th>Aperturas de newsletters</th><th>Búsquedas</th><th>Perfiles abiertos</th></tr></thead>
-        <tbody>{data.activity.map((bucket, i) => <tr key={bucket.starts}><td>{periods[i]}</td><td className="metrics-number">{formatNumber(bucket.visitors)}</td><td className="metrics-number">{formatNumber(bucket.newsletterVisitors)}</td><td className="metrics-number">{formatNumber(bucket.directoryUsers)}</td><td className="metrics-number">{formatNumber(bucket.newsletterViews)}</td><td className="metrics-number">{formatNumber(bucket.searches)}</td><td className="metrics-number">{formatNumber(bucket.profileViews)}</td></tr>)}</tbody></table>}>
+    <ChartCard title="Ingresos a la Red" description={<>Personas distintas que entraron a la Red y a Newsletters en cada período. {sources}</>}
+      table={<table className="administration-table"><thead><tr><th>Período</th>{ACTIVITY.map(item => <th key={item.key}>{item.label}</th>)}<th>Aperturas de newsletters</th></tr></thead>
+        <tbody>{data.activity.map((bucket, i) => <tr key={bucket.starts}><td>{periods[i]}</td><td className="metrics-number">{formatNumber(bucket.visitors)}</td><td className="metrics-number">{formatNumber(bucket.newsletterVisitors)}</td><td className="metrics-number">{formatNumber(bucket.newsletterViews)}</td></tr>)}</tbody></table>}>
       <MetricsColumnChart title="Ingresos a la Red" labels={labels} periods={periods} series={ACTIVITY}
-        values={data.activity.map(bucket => [bucket.visitors, bucket.newsletterVisitors, bucket.directoryUsers])} extra={activityExtra} />
+        values={data.activity.map(bucket => [bucket.visitors, bucket.newsletterVisitors])} extra={activityExtra} />
     </ChartCard>
   </>
 }
@@ -103,20 +102,7 @@ function NewsletterRanking({ data }: { data: MetricsOverview }) {
   </Surface>
 }
 
-function DirectoryUsage({ data }: { data: MetricsOverview }) {
-  const { summary, directory } = data
-  const terms = (rows: MetricsOverview['directory']['topTerms'], empty: boolean) => rows.length ? <ol className="metrics-terms">{rows.map(row => <li key={row.term}><span>{row.term}</span><small>{formatNumber(row.searches)} {row.searches === 1 ? 'vez' : 'veces'}{empty ? ` · ${formatNumber(row.people)} ${row.people === 1 ? 'persona' : 'personas'}` : ` · ${formatNumber(row.results ?? 0)} resultados`}</small></li>)}</ol> : <p className="metrics-muted">Sin búsquedas registradas.</p>
-  return <Surface className="metrics-card">
-    <div className="metrics-card-heading"><div><h2>Uso del Directorio</h2><p>{formatNumber(summary.directoryUsers)} integrantes buscaron o abrieron perfiles · {formatNumber(summary.searches)} búsquedas, {percent(summary.emptySearches, summary.searches)} sin resultados · {formatNumber(summary.profileViews)} perfiles abiertos.</p></div></div>
-    <div className="metrics-directory">
-      <section><h3>Lo más buscado</h3>{terms(directory.topTerms, false)}</section>
-      <section><h3><SearchX size={15} /> Búsquedas sin resultados</h3><p className="metrics-muted">Áreas o temas que la Red todavía no cubre o no se encuentran.</p>{terms(directory.emptyTerms, true)}</section>
-      <section><h3>Perfiles más consultados</h3>{directory.topProfiles.length ? <ol className="metrics-terms">{directory.topProfiles.map(row => <li key={row.id}><span>{row.name}<small>{row.role} · {row.ministry}</small></span><small>{formatNumber(row.views)} {row.views === 1 ? 'apertura' : 'aperturas'} · {formatNumber(row.viewers)} {row.viewers === 1 ? 'persona' : 'personas'}</small></li>)}</ol> : <p className="metrics-muted">Sin perfiles consultados.</p>}</section>
-    </div>
-  </Surface>
-}
-
-export function AdminMetricsPanel({ navigation }: { navigation?: ReactNode }) {
+export function MetricsPanel() {
   const [granularity, setGranularity] = useState<MetricsGranularity>('month')
   const [peopleFilters, setPeopleFilters] = useState<MetricsPeopleFilters>({ ...EMPTY_PEOPLE_FILTERS })
   const [editingUniverse, setEditingUniverse] = useState(false)
@@ -133,10 +119,9 @@ export function AdminMetricsPanel({ navigation }: { navigation?: ReactNode }) {
     { id: 'newsletters', label: 'Entraron a Newsletters', value: summary?.newsletterVisitors, note: summary && `${formatNumber(summary.newsletterReaders)} leyeron al menos uno`, icon: BookOpenText, onClick: () => show('metrics-ranking') },
   ]
   return <div className="metrics-panel">
-    <Surface className="administration-intro"><div><h1>Administración</h1><p>Seguí cuántos integrantes tiene la Red, quiénes ingresan y qué usan.</p></div><div className="administration-kpis">
+    <Surface className="administration-intro"><div><h1>Métricas</h1><p>Seguí cuántos integrantes tiene la Red, quiénes ingresan y qué newsletters se leen.</p></div><div className="administration-kpis">
       {kpis.map(item => <button key={item.id} type="button" onClick={item.onClick} aria-label={`${item.label}: ${item.value === undefined ? 'sin datos' : formatNumber(item.value)}`}><span><item.icon size={23} /></span><div>{item.label}<strong>{item.value === undefined ? '—' : formatNumber(item.value)}</strong>{item.note && <small>{item.note}</small>}</div></button>)}
     </div></Surface>
-    {navigation}
     <div className="metrics-toolbar" id="metrics-charts">
       <div className="metrics-segmented" role="radiogroup" aria-label="Agrupar por">{GRANULARITIES.map(item => <button key={item.id} type="button" role="radio" aria-checked={granularity === item.id} onClick={() => setGranularity(item.id)}>{item.label}</button>)}</div>
       <p role="status">{query.loading ? 'Actualizando…' : `${GRANULARITIES.find(item => item.id === granularity)?.range} · datos al ${query.data ? formatDateTime(query.data.generatedAt) : '—'}`}</p>
@@ -145,11 +130,10 @@ export function AdminMetricsPanel({ navigation }: { navigation?: ReactNode }) {
     {query.error || (!query.data && query.loading) ? <Surface className="metrics-card"><AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Calculando métricas…" errorTitle="No pudimos cargar las métricas" /></Surface>
       : query.data && <div className={`metrics-grid${query.loading ? ' is-loading' : ''}`}>
         <Charts data={query.data} onEditUniverse={() => setEditingUniverse(true)} />
-        <div id="metrics-ranking" className="metrics-wide"><NewsletterRanking data={query.data} /></div>
-        <div className="metrics-wide"><DirectoryUsage data={query.data} /></div>
       </div>}
     <MetricsPeople filters={peopleFilters} onChange={setPeopleFilters} />
-    <p className="administration-source-note"><Info size={17} /><span>Fecha de alta: la inscripción en el formulario de la Red o, para las incorporaciones posteriores, la aprobación administrativa. Las bajas incluyen las eliminaciones manuales de la Red anterior. Un ingreso se cuenta una vez por persona y por día. La historia hasta octubre de 2026 proviene del registro de la Red anterior (accesos, búsquedas y perfiles abiertos), vinculado por correo. Se excluyen las cuentas de prueba.</span></p>
+    {query.data && <div id="metrics-ranking" className="metrics-ranking-section"><NewsletterRanking data={query.data} /></div>}
+    <p className="administration-source-note"><Info size={17} /><span>Fecha de alta: la inscripción en el formulario de la Red o, para las incorporaciones posteriores, la aprobación administrativa. Las bajas incluyen las eliminaciones manuales de la Red anterior. Un ingreso se cuenta una vez por persona y por día. La historia de ingresos hasta octubre de 2026 proviene del registro de la Red anterior, vinculado por correo. Se excluyen las cuentas de prueba.</span></p>
     {editingUniverse && <UniverseDialog universe={query.data?.universe ?? null} onClose={() => setEditingUniverse(false)} onSaved={query.reload} />}
   </div>
 }
