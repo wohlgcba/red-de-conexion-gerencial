@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 
 const uid=n=>`30000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+// Synthetic CUIT/CUIL with valid checksums. No real Dotación data.
+function key(n){const base=`209999${String(n).padStart(4,'0')}`;let d=11-[5,4,3,2,7,6,5,4,3,2].reduce((s,w,i)=>s+w*Number(base[i]),0)%11;if(d===11)d=0;if(d===10)d=9;return base+d}
 const migration=name=>readFile(new URL(`../supabase/${name}`,import.meta.url),'utf8')
 test('usage metrics: activity recording, history backfill, aggregates, filters and permissions',async t=>{
  const db=new PGlite();t.after(()=>db.close())
@@ -13,7 +15,7 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,owner_id text);
  create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;`)
- for(const name of ['red_conexion_gerencial.sql','rcg_crud.sql','rcg_user_accounts.sql','rcg_organization.sql','rcg_administration.sql','rcg_administration_intake.sql','rcg_admin_newsletters.sql','rcg_newsletter_rich_text.sql','rcg_newsletter_reactions.sql'])await db.exec(await migration(name))
+ for(const name of ['red_conexion_gerencial.sql','rcg_crud.sql','rcg_user_accounts.sql','rcg_organization.sql','rcg_administration.sql','rcg_administration_intake.sql','rcg_admin_newsletters.sql','rcg_newsletter_rich_text.sql','rcg_newsletter_reactions.sql','rcg_gerencial_snapshot.sql'])await db.exec(await migration(name))
  for(let n=1;n<=7;n++)await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[uid(n),`metricas${n}@example.test`])
  await db.query('insert into red_conexion_gerencial.admin_users(user_id,email) values($1,$2)',[uid(1),'metricas1@example.test'])
  const person=(n,title,registered,sheet='Test',active=true)=>db.query('insert into red_conexion_gerencial.people(id,given_name,family_name,position_title,ministry,email,source_sheet,source_registered_at,phone,is_active) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
@@ -52,7 +54,6 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  await rpc('record_activity',['profile',uid(2)]);await rpc('record_activity',['profile',uid(2)]);await rpc('record_activity',['profile',uid(3)]) // Own profile is ignored.
  await rpc('record_search',['  Datos   Abiertos ',0]);await rpc('record_search',['datos abiertos',0]);await rpc('record_search',['x',4]);await rpc('record_search',['Gestión',2])
  await assert.rejects(()=>db.query('select * from rcg_private.directory_searches'))
- await assert.rejects(()=>rpc('admin_set_metrics_universe',[10]),/denegado/)
  await assert.rejects(()=>db.query('select * from rcg_private.member_activity'))
  await assert.rejects(()=>rpc('admin_metrics',['month']),/denegado/)
  await assert.rejects(()=>rpc('admin_metrics_people',[{}]),/denegado/)
@@ -72,7 +73,7 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  assert.deepEqual(month.directory.topTerms.map(t=>[t.term,t.searches,t.results]),[['datos abiertos',1,0],['gestión',1,2]])
  assert.deepEqual(month.directory.emptyTerms.map(t=>t.term),['datos abiertos'])
  assert.deepEqual(month.directory.topProfiles.map(t=>[t.id,t.views,t.viewers]),[[uid(2),2,1]])
- assert.equal(month.universe.total,1351)
+ assert.equal(month.coverage,null,'no Dotación snapshot yet')
  assert.equal(month.growth[0].starts,'2025-07-01');assert.equal(month.growth[0].gerente,1);assert.equal(month.growth[0].joined,1)
  assert.equal(month.growth.find(b=>b.starts==='2025-08-01').subgerente,0,'inactive people without a departure date are excluded')
  const april=month.growth.find(b=>b.starts==='2026-04-01');assert.equal(april.joined,2);assert.equal(april.subgerente,1);assert.equal(april.otro,1)
@@ -99,8 +100,16 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  assert.equal((await people({export:true,pageSize:1})).rows.length,4)
  await assert.rejects(()=>people({status:'todos'}),/filtros/)
  assert.equal(entered.rows.find(r=>r.id===uid(3)).directoryUses,4)
- await assert.rejects(()=>rpc('admin_set_metrics_universe',[0]),/total/)
- await rpc('admin_set_metrics_universe',[1400]);assert.equal((await rpc('admin_metrics',['month'])).universe.total,1400)
+ // Coverage: Dotación managers in the saved snapshot that are active Red members, by CUIT/CUIL.
+ await db.exec('reset role')
+ await db.query("insert into rcg_private.gerencial_snapshot(synced_at,started_at,coverage) values('2026-10-20 14:16+00','2026-10-20 14:15+00',$1)",[[key(1),key(2),key(3),key(4)]])
+ for(const [n,role] of [[1,'Gerente Operativo de Datos'],[2,'Subgerente Operativo de Compras'],[3,'Analista'],[4,'Subgerenta de Personal']])
+  await db.query("insert into rcg_private.gerencial_snapshot_people(identifier,assignments,contacts) values($1,$2,'[]')",[key(n),JSON.stringify([{role,unit:'Unidad',ministry:'Organismo'}])])
+ for(const [person,n] of [[2,1],[4,4],[6,2]])await db.query("insert into rcg_private.directory_link_keys(person_id,link_key,verified_at,verification_basis) values($1,$2,now(),'Prueba')",[uid(person),key(n)])
+ await actor(1)
+ const {syncedAt,...coverage}=(await rpc('admin_metrics',['month'])).coverage;assert.equal(new Date(syncedAt).toISOString(),'2026-10-20T14:16:00.000Z')
+ assert.deepEqual(coverage,{managers:3,covered:2,gerentes:{total:1,covered:1},subgerentes:{total:2,covered:1}},'mock members do not count')
+ await assert.rejects(()=>rpc('admin_set_metrics_universe',[1400]))
 
  // Previous Red workbook: matched by email, rerunnable, departures without personal data.
  await db.exec('reset role')

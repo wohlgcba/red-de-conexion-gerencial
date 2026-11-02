@@ -1,16 +1,16 @@
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
-import { BookOpenText, ChartColumn, Info, LogIn, PencilLine, RefreshCw, Table2, UserRoundX, UsersRound } from 'lucide-react'
+import { BookOpenText, ChartColumn, Info, LogIn, RefreshCw, Table2, UserRoundX, UsersRound } from 'lucide-react'
 import { Button, Surface } from '../common/UI'
 import { AdminLoadState } from './AdminPrimitives'
 import { useAdminQuery } from './useAdminQuery'
 import { MetricsColumnChart } from './MetricsColumnChart'
 import type { ChartSeries } from './MetricsColumnChart'
 import { MetricsPeople } from './MetricsPeople'
-import { DirectoryDialog } from '../directory/DirectoryDialog'
-import { getMetricsOverview, setMetricsUniverse } from '../../services/metrics'
+import { MetricsRanking } from './MetricsRanking'
+import { getMetricsOverview } from '../../services/metrics'
 import { axisLabel, EMPTY_PEOPLE_FILTERS, formatDateTime, formatNumber, formatShortDate, GRANULARITIES, LEVELS, percent, periodLabel } from './metricsModel'
-import type { MetricsGranularity, MetricsOverview, MetricsPeopleFilters, MetricsUniverse } from '../../types/metrics'
+import type { MetricsGranularity, MetricsOverview, MetricsPeopleFilters, MetricsCoverage } from '../../types/metrics'
 import './metrics.css'
 
 const ACTIVITY: ChartSeries[] = [
@@ -28,32 +28,18 @@ function ChartCard({ title, description, table, children }: { title: string; des
   </Surface>
 }
 
-function UniverseDialog({ universe, onClose, onSaved }: { universe: MetricsUniverse | null; onClose: () => void; onSaved: () => void }) {
-  const [value, setValue] = useState(String(universe?.total ?? ''))
-  const [state, setState] = useState<{ busy: boolean; error: string }>({ busy: false, error: '' })
-  const save = async () => {
-    setState({ busy: true, error: '' })
-    try { await setMetricsUniverse(Number(value)); onSaved(); onClose() } catch (cause) { setState({ busy: false, error: cause instanceof Error ? cause.message : 'No pudimos guardar el total.' }) }
-  }
-  return <DirectoryDialog title="Universo de cobertura" className="metrics-universe-dialog" onClose={onClose} busy={state.busy}
-    footer={<><Button onClick={onClose} disabled={state.busy}>Cancelar</Button><Button variant="primary" onClick={() => void save()} disabled={state.busy || !/^\d+$/.test(value)}>Guardar</Button></>}>
-    <p>Total de gerencias y subgerencias operativas del GCBA con el que se compara la cantidad de integrantes de la Red.</p>
-    <label>Total de GOs y SGOs<input type="number" min={1} max={100000} inputMode="numeric" value={value} onChange={event => setValue(event.target.value)} /></label>
-    {universe && <small>Fuente actual: {universe.source} · {formatShortDate(universe.updatedAt)}</small>}
-    {state.error && <p role="alert" className="administration-warning">{state.error}</p>}
-  </DirectoryDialog>
-}
-
-function Coverage({ members, universe, onEdit }: { members: number; universe: MetricsUniverse | null; onEdit: () => void }) {
-  const share = universe?.total ? Math.min(1, members / universe.total) : 0
+// Read-only: Dotación managers (saved snapshot) that are active Red members, matched by CUIT/CUIL.
+function Coverage({ coverage }: { coverage: MetricsCoverage | null }) {
+  if (!coverage) return <p className="metrics-coverage metrics-coverage-empty">La cobertura se calcula con el padrón gerencial de Dotación. Actualizalo desde Administración › Cruce con Dotación.</p>
+  const share = coverage.managers ? coverage.covered / coverage.managers : 0
   return <div className="metrics-coverage">
-    <div><strong>{universe ? percent(members, universe.total) : '—'}</strong><span>de cobertura: {formatNumber(members)} de {universe ? formatNumber(universe.total) : '—'} {universe?.label ?? 'GOs y SGOs'}</span></div>
-    <div className="metrics-meter" role="meter" aria-valuemin={0} aria-valuemax={universe?.total ?? 0} aria-valuenow={members} aria-label="Cobertura de la Red"><span style={{ width: `${share * 100}%` }} /></div>
-    <Button variant="ghost" onClick={onEdit} aria-label="Editar universo de cobertura"><PencilLine size={14} /> Editar</Button>
+    <div><strong>{percent(coverage.covered, coverage.managers)}</strong><span>de cobertura: {formatNumber(coverage.covered)} de {formatNumber(coverage.managers)} gerentes y subgerentes de Dotación están en la Red</span></div>
+    <div className="metrics-meter" role="meter" aria-valuemin={0} aria-valuemax={coverage.managers} aria-valuenow={coverage.covered} aria-label="Cobertura de la Red sobre Dotación"><span style={{ width: `${share * 100}%` }} /></div>
+    <small>Gerentes {formatNumber(coverage.gerentes.covered)} de {formatNumber(coverage.gerentes.total)} ({percent(coverage.gerentes.covered, coverage.gerentes.total)}) · Subgerentes {formatNumber(coverage.subgerentes.covered)} de {formatNumber(coverage.subgerentes.total)} ({percent(coverage.subgerentes.covered, coverage.subgerentes.total)}) · padrón de Dotación al {formatShortDate(coverage.syncedAt)}</small>
   </div>
 }
 
-function Charts({ data, onEditUniverse }: { data: MetricsOverview; onEditUniverse: () => void }) {
+function Charts({ data }: { data: MetricsOverview }) {
   const labels = data.growth.map(bucket => axisLabel(bucket.starts, data.granularity))
   const periods = data.growth.map(bucket => periodLabel(bucket.starts, data.granularity, data.today))
   const last = data.growth.at(-1)
@@ -77,7 +63,7 @@ function Charts({ data, onEditUniverse }: { data: MetricsOverview; onEditUnivers
         <tbody>{data.growth.map((bucket, i) => <tr key={bucket.starts}><td>{periods[i]}</td><td className="metrics-number">{formatNumber(bucket.gerente)}</td><td className="metrics-number">{formatNumber(bucket.subgerente)}</td><td className="metrics-number">{formatNumber(bucket.otro)}</td><td className="metrics-number"><strong>{formatNumber(bucket.gerente + bucket.subgerente + bucket.otro)}</strong></td><td className="metrics-number">{formatNumber(bucket.joined)}</td><td className="metrics-number">{formatNumber(bucket.left)}</td></tr>)}</tbody></table>}>
       <MetricsColumnChart title="Evolución de integrantes por cargo" labels={labels} periods={periods} series={GROWTH} stacked
         values={data.growth.map(bucket => [bucket.gerente, bucket.subgerente, bucket.otro])} extra={growthExtra} endLabel={formatNumber(total)} />
-      <Coverage members={data.summary.members} universe={data.universe} onEdit={onEditUniverse} />
+      <Coverage coverage={data.coverage} />
     </ChartCard>
     <ChartCard title="Ingresos a la Red" description={<>Personas distintas que entraron a la Red y a Newsletters en cada período. {sources}</>}
       table={<table className="administration-table"><thead><tr><th>Período</th>{ACTIVITY.map(item => <th key={item.key}>{item.label}</th>)}<th>Aperturas de newsletters</th></tr></thead>
@@ -88,24 +74,23 @@ function Charts({ data, onEditUniverse }: { data: MetricsOverview; onEditUnivers
   </>
 }
 
-function NewsletterRanking({ data }: { data: MetricsOverview }) {
-  const max = Math.max(1, ...data.newsletters.map(item => item.readers))
-  const read = data.newsletters.filter(item => item.readers > 0).length
-  return <Surface className="metrics-card">
-    <div className="metrics-card-heading"><div><h2>Newsletters más leídos</h2><p>{formatNumber(data.summary.newsletterReaders)} {data.summary.newsletterReaders === 1 ? 'integrante abrió' : 'integrantes abrieron'} al menos un newsletter · {formatNumber(data.summary.newsletterViews)} aperturas en total · {formatNumber(read)} de {formatNumber(data.newsletters.length)} con lecturas.</p></div></div>
-    {data.newsletters.length ? <ol className="metrics-ranking">{data.newsletters.map((item, index) => <li key={item.id}>
-      <span className="metrics-rank">{index + 1}</span>
-      <div className="metrics-ranking-title"><strong>{item.title}</strong><small>{item.topic}{item.publishedAt ? ` · publicado el ${formatShortDate(item.publishedAt)}` : ''}{item.status !== 'publicado' ? ' · ya no está publicado' : ''}</small></div>
-      <div className="metrics-ranking-bar" aria-label={`${formatNumber(item.readers)} lectores`}><span style={{ width: `${item.readers / max * 100}%` }} /><b>{formatNumber(item.readers)} {item.readers === 1 ? 'lector' : 'lectores'}</b></div>
-      <div className="metrics-ranking-meta"><span>{formatNumber(item.views)} {item.views === 1 ? 'apertura' : 'aperturas'}</span><span>{formatNumber(item.reactions)} {item.reactions === 1 ? 'reacción' : 'reacciones'}</span></div>
-    </li>)}</ol> : <div className="administration-empty"><BookOpenText size={30} /><h3>Todavía no hay newsletters publicados.</h3></div>}
-  </Surface>
+function Rankings({ data }: { data: MetricsOverview }) {
+  const { summary } = data
+  const newsletters = data.newsletters.map(item => ({ id: item.id, label: item.title, value: item.readers,
+    detail: `${item.topic} · ${formatNumber(item.views)} ${item.views === 1 ? 'apertura' : 'aperturas'} · ${formatNumber(item.reactions)} ${item.reactions === 1 ? 'reacción' : 'reacciones'}${item.status !== 'publicado' ? ' · ya no está publicado' : ''}` }))
+  const terms = data.directory.topTerms.map(item => ({ id: item.term, label: item.term, value: item.searches,
+    detail: `${formatNumber(item.people)} ${item.people === 1 ? 'persona' : 'personas'} · ${formatNumber(item.results ?? 0)} resultados en promedio` }))
+  return <div className="metrics-rankings">
+    <MetricsRanking id="metrics-ranking" title="Newsletters más leídos" items={newsletters} unit={['lector', 'lectores']} color="var(--metrics-newsletter)"
+      empty="Todavía no hay lecturas de newsletters." description={<>{formatNumber(summary.newsletterReaders)} {summary.newsletterReaders === 1 ? 'integrante abrió' : 'integrantes abrieron'} al menos un newsletter · {formatNumber(summary.newsletterViews)} aperturas en total.</>} />
+    <MetricsRanking title="Palabras más buscadas" items={terms} unit={['búsqueda', 'búsquedas']} color="var(--metrics-search)"
+      empty="Todavía no hay búsquedas registradas." description={<>Lo que más se busca en el Directorio · {formatNumber(summary.searches)} búsquedas, {percent(summary.emptySearches, summary.searches)} sin resultados.</>} />
+  </div>
 }
 
 export function MetricsPanel() {
   const [granularity, setGranularity] = useState<MetricsGranularity>('month')
   const [peopleFilters, setPeopleFilters] = useState<MetricsPeopleFilters>({ ...EMPTY_PEOPLE_FILTERS })
-  const [editingUniverse, setEditingUniverse] = useState(false)
   const load = useCallback(() => getMetricsOverview(granularity), [granularity])
   const query = useAdminQuery(load)
   const summary = query.data?.summary
@@ -129,11 +114,10 @@ export function MetricsPanel() {
     </div>
     {query.error || (!query.data && query.loading) ? <Surface className="metrics-card"><AdminLoadState loading={query.loading} error={query.error} retry={query.reload} loadingTitle="Calculando métricas…" errorTitle="No pudimos cargar las métricas" /></Surface>
       : query.data && <div className={`metrics-grid${query.loading ? ' is-loading' : ''}`}>
-        <Charts data={query.data} onEditUniverse={() => setEditingUniverse(true)} />
+        <Charts data={query.data} />
       </div>}
+    {query.data && <Rankings data={query.data} />}
     <MetricsPeople filters={peopleFilters} onChange={setPeopleFilters} />
-    {query.data && <div id="metrics-ranking" className="metrics-ranking-section"><NewsletterRanking data={query.data} /></div>}
     <p className="administration-source-note"><Info size={17} /><span>Fecha de alta: la inscripción en el formulario de la Red o, para las incorporaciones posteriores, la aprobación administrativa. Las bajas incluyen las eliminaciones manuales de la Red anterior. Un ingreso se cuenta una vez por persona y por día. La historia de ingresos hasta octubre de 2026 proviene del registro de la Red anterior, vinculado por correo. Se excluyen las cuentas de prueba.</span></p>
-    {editingUniverse && <UniverseDialog universe={query.data?.universe ?? null} onClose={() => setEditingUniverse(false)} onSaved={query.reload} />}
   </div>
 }

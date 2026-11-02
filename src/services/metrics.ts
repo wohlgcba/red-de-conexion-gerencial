@@ -13,7 +13,6 @@ async function metricsRpc<T>(name: string, args: Record<string, unknown>): Promi
 }
 
 export const getMetricsOverview = (granularity: MetricsGranularity) => metricsRpc<MetricsOverview>('admin_metrics', { p_granularity: granularity })
-export const setMetricsUniverse = (total: number) => metricsRpc<void>('admin_set_metrics_universe', { p_total: total })
 export const getMetricsPeople = (filters: MetricsPeopleFilters, exportAll = false) => metricsRpc<MetricsPeoplePage>('admin_metrics_people', { p_filters: { ...filters, export: exportAll } })
 
 // One call per tab, day and target is enough: the database aggregates per day.

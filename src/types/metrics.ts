@@ -23,7 +23,7 @@ export interface GrowthBucket { starts: string; gerente: number; subgerente: num
 export interface ActivityBucket { starts: string; visitors: number; newsletterVisitors: number; directoryUsers: number; newsletterViews: number; searches: number; profileViews: number }
 export interface NewsletterMetric { id: string; title: string; topic: string; status: string; publishedAt: string | null; readers: number; views: number; reactions: number; lastViewedAt: string | null }
 
-export interface MetricsUniverse { total: number; label: string; source: string; updatedAt: string }
+export interface MetricsCoverage { syncedAt: string; managers: number; covered: number; gerentes: { total: number; covered: number }; subgerentes: { total: number; covered: number } }
 export interface SearchTerm { term: string; searches: number; people: number; results?: number }
 export interface ProfileMetric { id: string; name: string; role: string; ministry: string; views: number; viewers: number }
 
@@ -34,7 +34,7 @@ export interface MetricsOverview {
   trackingSince: string | null
   historySince: string | null
   historyUntil: string | null
-  universe: MetricsUniverse | null
+  coverage: MetricsCoverage | null
   summary: MetricsSummary
   growth: GrowthBucket[]
   activity: ActivityBucket[]

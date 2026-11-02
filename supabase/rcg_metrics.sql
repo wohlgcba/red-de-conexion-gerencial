@@ -1,4 +1,4 @@
--- BASE GCBA only (pnhskmlejdaklwkvasxp). Requires rcg_administration.sql and rcg_newsletter_reactions.sql.
+-- BASE GCBA only (pnhskmlejdaklwkvasxp). Requires rcg_administration.sql, rcg_gerencial_snapshot.sql and rcg_newsletter_reactions.sql.
 -- Usage metrics for administrators. Auth is shared with Hub, so Red activity is recorded here,
 -- aggregated per person, Buenos Aires day and kind. Safe to reapply.
 -- History from the previous Red (Apps Script workbook) is loaded by scripts/import_metrics_history.py.
@@ -44,18 +44,12 @@ create table if not exists rcg_private.metrics_departures (
   source text not null default 'xlsx' check (source in ('xlsx'))
 );
 
-create table if not exists rcg_private.metrics_settings (
-  key text primary key,
-  value jsonb not null,
-  updated_at timestamptz not null default now(),
-  updated_by uuid references auth.users(id) on delete set null
-);
-insert into rcg_private.metrics_settings(key, value)
-  values ('universe', '{"total":1351,"label":"GOs y SGOs del GCBA","source":"Hoja Demograficas del registro de la Red"}')
-  on conflict (key) do nothing;
+-- Coverage comes from the saved Dotación snapshot; the former editable universe is removed.
+drop function if exists red_conexion_gerencial.admin_set_metrics_universe(integer);
+drop table if exists rcg_private.metrics_settings;
 
 do $$ declare t text; begin
-  foreach t in array array['member_activity','directory_searches','metrics_departures','metrics_settings'] loop
+  foreach t in array array['member_activity','directory_searches','metrics_departures'] loop
     execute format('alter table rcg_private.%I enable row level security', t);
     execute format('revoke all on rcg_private.%I from public, anon, authenticated, service_role', t);
   end loop;
@@ -135,16 +129,23 @@ begin
       set hits = least(rcg_private.member_activity.hits + 1, 100000), last_at = now(), user_id = excluded.user_id;
 end $$;
 
-create or replace function red_conexion_gerencial.admin_set_metrics_universe(p_total integer)
-returns void language plpgsql security definer set search_path = '' as $$
-begin
-  perform rcg_private.admin_assert();
-  if p_total is null or p_total < 1 or p_total > 100000 then raise exception 'Ingresá un total entre 1 y 100.000' using errcode = '22023'; end if;
-  insert into rcg_private.metrics_settings(key, value, updated_at, updated_by)
-    values ('universe', jsonb_build_object('total', p_total, 'label', 'GOs y SGOs del GCBA', 'source', 'Actualizado desde Administración'), now(), auth.uid())
-    on conflict (key) do update set value = rcg_private.metrics_settings.value || jsonb_build_object('total', p_total, 'source', 'Actualizado desde Administración'),
-      updated_at = now(), updated_by = auth.uid();
-end $$;
+-- Managers in the saved Dotación snapshot and how many of them are active Red members, by CUIT/CUIL.
+create or replace function rcg_private.metrics_coverage()
+returns jsonb language sql stable security definer set search_path = '' as $$
+  with managers as (
+    select p.identifier, case when bool_or(rcg_private.admin_norm(trim(r->>'role')) ~ '^gerent[ea]([[:space:]]|$)') then 'gerente' else 'subgerente' end as level
+    from rcg_private.gerencial_snapshot_people p cross join jsonb_array_elements(p.assignments) r
+    group by p.identifier having bool_or(rcg_private.admin_is_manager(r->>'role'))),
+  members as (
+    select distinct k.link_key from rcg_private.directory_link_keys k join red_conexion_gerencial.people p on p.id = k.person_id
+    where p.is_active and p.source_sheet <> 'RCG_MOCK_TEST_USERS_V1'),
+  matched as (select m.*, m.identifier in (select link_key from members) as in_red from managers m)
+  select case when s.singleton is null then null else jsonb_build_object('syncedAt', s.synced_at,
+    'managers', (select count(*) from matched), 'covered', (select count(*) from matched where in_red),
+    'gerentes', jsonb_build_object('total', (select count(*) from matched where level = 'gerente'), 'covered', (select count(*) from matched where level = 'gerente' and in_red)),
+    'subgerentes', jsonb_build_object('total', (select count(*) from matched where level = 'subgerente'), 'covered', (select count(*) from matched where level = 'subgerente' and in_red))) end
+  from (select true as anchor) a left join rcg_private.gerencial_snapshot s on s.singleton;
+$$;
 
 create or replace function red_conexion_gerencial.admin_metrics(p_granularity text default 'month')
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
@@ -169,7 +170,7 @@ begin
     'trackingSince', (select min(first_at) from rcg_private.member_activity where source = 'app'),
     'historySince', (select min(first_at) from rcg_private.member_activity where source = 'xlsx'),
     'historyUntil', (select max(last_at) from rcg_private.member_activity where source = 'xlsx'),
-    'universe', (select s.value || jsonb_build_object('updatedAt', s.updated_at) from rcg_private.metrics_settings s where s.key = 'universe'),
+    'coverage', rcg_private.metrics_coverage(),
     'summary', jsonb_build_object(
       'members', (select count(*) from current_members),
       'gerentes', (select count(*) from current_members where level = 'gerente'),
@@ -332,12 +333,11 @@ revoke all on function rcg_private.metrics_people() from public, anon, authentic
 revoke all on function rcg_private.metrics_actor() from public, anon, authenticated, service_role;
 revoke all on function red_conexion_gerencial.record_activity(text, uuid) from public, anon, authenticated, service_role;
 revoke all on function red_conexion_gerencial.record_search(text, integer) from public, anon, authenticated, service_role;
-revoke all on function red_conexion_gerencial.admin_set_metrics_universe(integer) from public, anon, authenticated, service_role;
+revoke all on function rcg_private.metrics_coverage() from public, anon, authenticated, service_role;
 revoke all on function red_conexion_gerencial.admin_metrics(text) from public, anon, authenticated, service_role;
 revoke all on function red_conexion_gerencial.admin_metrics_people(jsonb) from public, anon, authenticated, service_role;
 grant execute on function red_conexion_gerencial.record_activity(text, uuid) to authenticated;
 grant execute on function red_conexion_gerencial.record_search(text, integer) to authenticated;
-grant execute on function red_conexion_gerencial.admin_set_metrics_universe(integer) to authenticated;
 grant execute on function red_conexion_gerencial.admin_metrics(text) to authenticated;
 grant execute on function red_conexion_gerencial.admin_metrics_people(jsonb) to authenticated;
 
