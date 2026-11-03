@@ -26,7 +26,7 @@ export function MetricsRanking({ id, title, description, items, unit, color, emp
           <ol className="metrics-podium">{PLACES.map(index => {
             const item = ranked[index]
             return item ? <li key={item.id} className={`metrics-podium-place place-${index + 1}`} aria-label={`Puesto ${index + 1}: ${item.label}, ${plural(item.value, unit)}`}>
-              <div className="metrics-podium-entry">{index < 3 && <Medal size={20} aria-hidden="true" />}<strong title={item.label}>{item.label}</strong><small>{item.detail}</small><b>{plural(item.value, unit)}</b></div>
+              <div className="metrics-podium-entry">{index < 3 && <Medal size={20} aria-hidden="true" />}<strong title={item.label}>{item.label}</strong><b>{plural(item.value, unit)}</b></div>
               <div className="metrics-podium-step" aria-hidden="true">{index + 1}</div>
             </li> : <li key={`empty-${index}`} className={`metrics-podium-place place-${index + 1} is-empty`} aria-hidden="true"><div className="metrics-podium-step" /></li>
           })}</ol>
