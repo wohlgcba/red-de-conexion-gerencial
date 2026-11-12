@@ -21,8 +21,8 @@ export function DirectoryFilters({ filters, options, onChange, onClear, idPrefix
     </div>)}
     <div className="directory-filter-field"><label id={`${idPrefix}-state-label`} htmlFor={`${idPrefix}-state`}>Estado</label>
       <FilterDropdown id={`${idPrefix}-state`} labelledBy={`${idPrefix}-state-label`} value={filters.state} onChange={value => onChange('state', value)}
-        describedBy={`${idPrefix}-state-help`} icon={<CheckCircle2 size={17} />} options={[{ value: '', label: 'Todos' }, { value: 'active', label: 'Activos' }]} />
-      <small id={`${idPrefix}-state-help`}>El directorio muestra integrantes activos.</small>
+        describedBy={`${idPrefix}-state-help`} icon={<CheckCircle2 size={17} />} options={[{ value: '', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]} />
+      <small id={`${idPrefix}-state-help`}>Activo: ingresó al menos una vez a este portal. Inactivo: nunca ingresó.</small>
     </div>
   </div>
 }

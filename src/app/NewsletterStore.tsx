@@ -142,6 +142,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setPeople([]); setDirectorates([]); setItems([])
         return
       }
+      await recordActivity(userId, 'visit')
+      if (!isCurrent()) return
       const [peopleResult, photos] = await Promise.all([catalog.getPeople(), profilePhotos.getProfilePhotos()])
       if (!isCurrent()) return
       const [directoratesResult, newslettersResult] = await Promise.all([

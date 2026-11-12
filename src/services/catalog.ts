@@ -14,7 +14,10 @@ const parseTopics = (value: string | null) => (value ?? '').split(/[;\n,]+/).map
 export async function getPeople(): Promise<Person[]> {
   const { data, error } = await db().from('people').select('id,given_name,family_name,position_title,ministry,secretariat,directorate,directorate_id,phone,email,advisory_topics,bio,version').eq('is_active', true).order('family_name')
   check(error)
-  return ((data ?? []) as PersonRow[]).map(row => ({ id: row.id, name: `${row.given_name} ${row.family_name}`.trim(), givenName: row.given_name, familyName: row.family_name, role: row.position_title, directorate: row.directorate ?? '', directorateId: row.directorate_id, ministry: row.ministry, secretariat: row.secretariat ?? '', email: row.email, phone: row.phone, topics: parseTopics(row.advisory_topics), advisoryTopicsRaw: row.advisory_topics ?? '', bio: row.bio, avatar: 0, newsletterIds: [], version: row.version }))
+  const activity = await db().rpc('directory_portal_activity')
+  check(activity.error)
+  const entered = new Map((activity.data as { person_id: string; has_entered_portal: boolean }[] ?? []).map(row => [row.person_id, row.has_entered_portal]))
+  return ((data ?? []) as PersonRow[]).map(row => ({ id: row.id, name: `${row.given_name} ${row.family_name}`.trim(), givenName: row.given_name, familyName: row.family_name, role: row.position_title, directorate: row.directorate ?? '', directorateId: row.directorate_id, ministry: row.ministry, secretariat: row.secretariat ?? '', email: row.email, phone: row.phone, topics: parseTopics(row.advisory_topics), advisoryTopicsRaw: row.advisory_topics ?? '', bio: row.bio, hasEnteredPortal: entered.get(row.id), avatar: 0, newsletterIds: [], version: row.version }))
 }
 
 export async function getDirectorates(people: Person[]): Promise<Directorate[]> {

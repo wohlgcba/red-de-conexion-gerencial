@@ -13,6 +13,7 @@ export interface Person {
   phone: string
   topics: string[]
   advisoryTopicsRaw: string
+  hasEnteredPortal?: boolean
   bio: string
   avatar: number
   photoUrl?: string

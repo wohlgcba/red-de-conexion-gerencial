@@ -29,6 +29,7 @@ export function getDirectoryResults(people: Person[], newsletters: Newsletter[],
   const search = norm(query.trim())
   // El servicio existente entrega únicamente personas activas. No inferir otros estados.
   const matches = people.filter(person =>
+    (!filters.state || (filters.state === 'active' ? person.hasEnteredPortal === true : person.hasEnteredPortal === false)) &&
     (!filters.ministry || person.ministry === filters.ministry) &&
     (!filters.secretariat || person.secretariat === filters.secretariat) &&
     (!filters.directorate || person.directorate === filters.directorate) &&
@@ -45,7 +46,10 @@ export function getDirectoryResults(people: Person[], newsletters: Newsletter[],
       const byActivity = (activity.get(b.id) ?? '').localeCompare(activity.get(a.id) ?? '')
       if (byActivity) return byActivity
     }
-    return collator.compare(a.name, b.name) * (sort === 'za' ? -1 : 1)
+    const alphabetical = collator.compare(a.familyName.trim(), b.familyName.trim())
+      || collator.compare(a.givenName.trim(), b.givenName.trim())
+      || collator.compare(a.name, b.name)
+    return alphabetical * (sort === 'za' ? -1 : 1)
   })
 }
 

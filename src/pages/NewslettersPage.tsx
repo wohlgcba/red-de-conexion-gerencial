@@ -10,7 +10,7 @@ import { recordActivity } from '../services/metrics'
 
 export function NewslettersPage() {
   const { people, currentPersonId, isAdmin, items, user } = useCatalog()
-  useEffect(() => recordActivity(user.id, 'newsletters'), [user.id])
+  useEffect(() => { void recordActivity(user.id, 'newsletters') }, [user.id])
   const published = items.filter(item => item.status === 'publicado')
   const featured = published.find(item => item.featured) ?? published[0]
   const [query, setQuery] = useState('')

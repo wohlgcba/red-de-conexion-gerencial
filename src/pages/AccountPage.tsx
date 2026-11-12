@@ -1,3 +1,4 @@
+import { personDescription } from '../utils/personDescription'
 import { Building2, LockKeyhole, Mail, ShieldCheck, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCatalog } from '../app/useCatalog'
@@ -39,7 +40,7 @@ export function AccountPage() {
         {!person && <p className="account-profile-note">Tu cuenta todavía no tiene un perfil vinculado en el Directorio. Se muestran los datos disponibles de tu sesión.</p>}
         <section className="account-profile-section"><h3>Datos institucionales</h3><dl className="account-profile-fields">{fields.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || 'No informado'}</dd></div>)}</dl></section>
         {person && <>
-          <section className="account-profile-section"><h3>Breve descripción</h3><p>{person.bio || 'Todavía no hay una descripción en tu perfil.'}</p></section>
+          <section className="account-profile-section"><h3>Breve descripción</h3><p>{personDescription(person) || 'Todavía no hay una descripción en tu perfil.'}</p></section>
           <section className="account-profile-section"><h3>Temas en los que podés asesorar</h3>{person.topics.length ? <div className="account-profile-topics">{person.topics.map(topic => <Chip key={topic}>{topic}</Chip>)}</div> : <p>Todavía no hay temas de asesoramiento en tu perfil.</p>}</section>
           <Link className="btn btn-outline" to={`/directorio?persona=${person.id}`}><UserRound size={18} /> Ver mi perfil en el Directorio</Link>
         </>}

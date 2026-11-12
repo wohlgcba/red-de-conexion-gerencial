@@ -17,12 +17,21 @@ export const getMetricsPeople = (filters: MetricsPeopleFilters, exportAll = fals
 
 // One call per tab, day and target is enough: the database aggregates per day.
 const recorded = new Set<string>()
-export function recordActivity(userId: string, kind: ActivityKind, targetId?: string) {
+const pending = new Map<string, Promise<void>>()
+export function recordActivity(userId: string, kind: ActivityKind, targetId?: string): Promise<void> {
   const key = `rcg:activity:${userId}:${new Date().toLocaleDateString('en-CA')}:${kind}:${targetId ?? ''}`
-  if (recorded.has(key)) return
-  recorded.add(key)
-  try { if (window.sessionStorage.getItem(key)) return; window.sessionStorage.setItem(key, '1') } catch { /* The in-memory set still avoids repeated calls. */ }
-  void requireSupabase().schema(SCHEMA).rpc('record_activity', { p_kind: kind, p_target: targetId ?? null }).then(() => undefined, () => undefined)
+  const running = pending.get(key)
+  if (running) return running
+  if (recorded.has(key)) return Promise.resolve()
+  try { if (window.sessionStorage.getItem(key)) return Promise.resolve() } catch { /* Memory cache remains available. */ }
+  const request = Promise.resolve(requireSupabase().schema(SCHEMA).rpc('record_activity', { p_kind: kind, p_target: targetId ?? null }))
+    .then(({ error }) => {
+      if (error) return
+      recorded.add(key)
+      try { window.sessionStorage.setItem(key, '1') } catch { /* Memory cache remains available. */ }
+    }).catch(() => undefined).finally(() => pending.delete(key))
+  pending.set(key, request)
+  return request
 }
 
 // The database ignores the same term from the same person within ten minutes.

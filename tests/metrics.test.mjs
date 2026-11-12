@@ -139,4 +139,22 @@ test('usage metrics: activity recording, history backfill, aggregates, filters a
  assert.equal(after.growth.find(b=>b.starts==='2026-05-01').subgerente,2,'the departure counts until it leaves');assert.equal(june.subgerente,1)
  assert.equal(after.growth[0].joined,2)
  assert.deepEqual((await people({status:'never'})).counts,{all:4,never:0,entered:4})
+ // Directory status ignores old workbook activity and shared Auth logins.
+ await db.exec('reset role');await db.exec(await migration('rcg_directory_portal_activity.sql'))
+ await db.exec(await migration('rcg_directory_portal_activity.sql'))
+ await actor(null);await assert.rejects(()=>rpc('directory_portal_activity'),/denegado|permission denied/)
+ await actor(1)
+ const portal=async()=>(await db.query('select * from red_conexion_gerencial.directory_portal_activity()')).rows
+ const entries=await portal()
+ const status=id=>entries.find(p=>p.person_id===uid(id)).has_entered_portal
+ assert.equal(status(3),true,'actual new portal visit')
+ assert.equal(status(5),false,'old workbook activity does not count')
+ assert.equal(status(2),false,'history-only evidence is not a confirmed portal visit')
+ await db.exec('reset role')
+ await db.query('insert into red_conexion_gerencial.member_accounts(person_id,auth_user_id,must_change_password) values($1,$1,false)',[uid(5)])
+ await actor(5);await rpc('record_activity',['visit',null])
+ assert.equal((await portal()).find(p=>p.person_id===uid(5)).has_entered_portal,true)
+ await actor(4);await rpc('record_activity',['visit',null])
+ await assert.rejects(()=>rpc('directory_portal_activity'),/denegado/)
+
 })

@@ -1,6 +1,7 @@
-.app-header{overflow:visible;gap:24px;z-index:14;height:auto;min-height:80px;padding-top:12px;padding-bottom:12px}
+.app-shell .app-header{overflow:visible;gap:24px;z-index:14;height:auto;min-height:80px;padding-top:12px;padding-bottom:12px}
 .header-decoration{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
-.app-header .header-title{min-width:0}
+.app-header .header-title{min-width:0;flex:1}
+.header-network-logo{display:block;width:clamp(120px,22vw,240px);max-width:100%;height:auto}
 .header-user-area{position:relative;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:2}
 .header-institutional-logo img{width:176px;height:auto;max-height:52px;object-fit:contain}
 .header-user-separator{width:1px;height:35px;background:#ffffff40;margin:0 3px}
