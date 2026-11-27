@@ -24,7 +24,7 @@ export function EditorialFilters({ value, tray, data, onChange, onTrayChange, on
   const options = (values: string[]) => values.filter(Boolean).sort((a, b) => a.localeCompare(b, 'es')).map(name => ({ id: name, name }))
   const fields = <>
     <label className="administration-filter">Estado<FilterSelect aria-label="Estado" value={tray} onChange={event => onTrayChange(event.target.value as EditorialTray)}>{EDITORIAL_TRAYS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</FilterSelect></label>
-    {select('topic', 'Temática', options(data?.topics ?? []), 'Todas')}
+    {select('topic', 'Etiqueta', options(data?.topics ?? []), 'Todas')}
     {select('ministry', 'Organismo', options(data?.ministries ?? []), 'Todos')}
     <details className="administration-more-filters" open={mobile || undefined}><summary>Más filtros</summary><div>
       {select('author', 'Autor', data?.authors ?? [], 'Todos')}

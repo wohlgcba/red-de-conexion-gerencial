@@ -1,7 +1,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { portalTagKey, portalTagLink, publicationTags } from '../src/config/portal.ts'
 import { groupNewsletters, publishedByDate, topicLink } from '../src/components/newsletters/catalogModel.ts'
 import { tematica } from '../src/config/tematicas.ts'
+
+test('publication tags include secondary and legacy values, normalize names and keep links intact', () => {
+  const tags = publicationTags({ topic: 'Innovación pública', tags: ['#Gestión', 'Comunicacion', 'innOvación', 'I+D / Áreas'] })
+  assert.deepEqual(tags, ['Gestión', 'Comunicación', 'Innovación', 'I+D / Áreas'])
+  assert.deepEqual(publicationTags({ topic: 'Procesos', tags: [] }), ['Procesos'])
+  assert.deepEqual(publicationTags({ topic: 'Sin temática', tags: ['', '#sin tematica'] }), [])
+  assert.equal(portalTagKey(tags[1]), 'comunicacion')
+  assert.equal(new URL(portalTagLink(tags[3]), 'https://red.example').searchParams.get('tematica'), 'I+D / Áreas')
+})
 
 const item = (id, topic, date, authorId = 'one', status = 'publicado') => ({ id, topic, date, authorId, status })
 const people = [{ id: 'one', name: 'Ana Ejemplo', ministry: 'Salud' }, { id: 'two', name: 'Ana Ejemplo', ministry: 'Cultura' }]

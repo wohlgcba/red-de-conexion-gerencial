@@ -122,6 +122,7 @@ test('editorial versions, public projection, moderation, audit, notifications an
  await t.test('Portal permissions and attachments follow the approved editorial version', async () => {
   await db.exec(await migration('rcg_portal.sql'))
   await db.exec(await migration('rcg_portal.sql'))
+  await db.exec(await migration('rcg_portal_tag_filters.sql'))
   await db.exec('grant insert on storage.objects to authenticated')
   const uploaded = (name, mime) => db.query(
    "insert into storage.objects(bucket_id,name,owner_id,metadata) values('rcg-portal-attachments',$1,$2,jsonb_build_object('mimetype',$3::text))",
@@ -149,8 +150,13 @@ test('editorial versions, public projection, moderation, audit, notifications an
   await actor(3); assert.equal(await root(post), undefined); assert.equal(await accessible(path), false); assert.equal(await accessible(previewPath), false)
   await actor(1); assert.equal(await accessible(path), true); assert.equal(await accessible(previewPath), true); await decide(post,'publicado')
   await uploaded(adminPath,pdf)
-  const adminPost = await save(null,0,content('',{portal_section:section,attachments:[{path:adminPath,name:'Herramienta.pdf',mime:pdf}]}),'publicado')
+  const adminPost = await save(null,0,content('',{portal_section:section,tags:['Gestión','Comunicación'],attachments:[{path:adminPath,name:'Herramienta.pdf',mime:pdf}]}),'publicado')
   assert.equal((await root(adminPost)).portal_section, section)
+  assert.deepEqual((await root(adminPost)).tags, ['Gestión','Comunicación'])
+  const bySecondaryTag = await list('published', { topic:'Comunicación' })
+  assert.deepEqual(bySecondaryTag.rows.map(row => row.id), [adminPost])
+  assert(bySecondaryTag.topics.includes('Comunicación'))
+  assert.deepEqual((await list('published', { query:'comunicacion' })).rows.map(row => row.id), [adminPost])
   await actor(2)
   const revised = [{ path:replacement, name:'Guía actualizada.pdf', mime:pdf }]
   await save(post,(await root(post)).version,content('',{attachments:revised,portal_section:community}),'pendiente')

@@ -3,20 +3,21 @@ import type { ReactNode } from 'react'
 import { CalendarDays, Clock3 } from 'lucide-react'
 import { Avatar } from '../common/Avatar'
 import { Surface } from '../common/UI'
-import { TopicChip } from './NewsletterParts'
+import { NewsletterTags } from './NewsletterParts'
 import { longDate } from '../../utils/format'
 import type { Newsletter } from '../../types'
 import type { getNewsletterAuthor } from '../../utils/newsletterAuthor'
 import { sanitizeNewsletterHtml } from '../../utils/newsletterContent'
 import { PortalAttachments } from './PortalAttachments'
+import { publicationTags } from '../../config/portal'
 import './newsletter-content.css'
 
-export function NewsletterArticle({ item, author, footer }: {
-  item: Newsletter; author: ReturnType<typeof getNewsletterAuthor>; footer?: ReactNode
+export function NewsletterArticle({ item, author, footer, linkTags = false }: {
+  item: Newsletter; author: ReturnType<typeof getNewsletterAuthor>; footer?: ReactNode; linkTags?: boolean
 }) {
   const html = useMemo(() => item.bodyHtml ? sanitizeNewsletterHtml(item.bodyHtml) : null, [item.bodyHtml])
   return <div className="detail-main">
-    <Surface className="article-header"><div className="article-header-copy"><TopicChip topic={item.topic} /><h1>{item.title}</h1><p>{item.subtitle}</p>
+    <Surface className="article-header"><div className="article-header-copy"><NewsletterTags tags={publicationTags(item)} links={linkTags} /><h1>{item.title}</h1><p>{item.subtitle}</p>
       <div className="article-byline"><Avatar name={author.name} photoUrl={author.photoUrl} size={42} /><span><strong>{author.name}</strong><small>{author.role} · {author.ministry}</small></span><i />
         <span><CalendarDays size={15} /> {longDate(item.date)}</span><i /><span><Clock3 size={15} /> {item.readingMinutes} min de lectura</span></div>
     </div><img className="article-cover" src={item.image} alt="Portada de la publicación" /></Surface>

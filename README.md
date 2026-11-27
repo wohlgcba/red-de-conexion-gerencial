@@ -77,6 +77,10 @@ publicada hasta su aprobación. El filtro editorial abre en **Todos**.
 
 ## Portal
 
+Cada publicación pertenece a una sección y puede llevar varias etiquetas de ejes temáticos.
+Las etiquetas permiten filtrar publicaciones dentro de una sección, en todo el Portal y en la bandeja editorial.
+Aplicar `supabase/rcg_portal_tag_filters.sql` después de `supabase/rcg_portal.sql` para actualizar esta última.
+
 Los integrantes envían publicaciones a revisión desde **Compartí con la Red**.
 Administración puede publicar en las seis secciones y sigue moderando desde el
 panel editorial. Las publicaciones existentes aparecen en **Compartí con la Red**,
