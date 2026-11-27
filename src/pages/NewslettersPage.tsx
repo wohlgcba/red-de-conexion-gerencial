@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Files, PencilLine, Search, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, PencilLine, Search, UserRound } from 'lucide-react'
 import { FilterSelect, PageHeading, Surface } from '../components/common/UI'
 import { FeaturedNewsletter, NewsletterCard } from '../components/newsletters/NewsletterParts'
-import { LatestNewsletters } from '../components/newsletters/NewsletterTopicSections'
+import { LatestNewsletters, PortalSectionCard } from '../components/newsletters/NewsletterTopicSections'
 import { publishedByDate } from '../components/newsletters/catalogModel'
 import { useCatalog } from '../app/useCatalog'
 import { norm } from '../utils/format'
@@ -50,28 +50,28 @@ export function NewslettersPage() {
 
   return <div className="page-stack newsletter-catalog">
     <Surface className="newsletter-catalog-intro">
-      <PageHeading title="Portal" actions={<>
+      <PageHeading title="Portal" subtitle="Elegí una sección para ver sus publicaciones." actions={<>
         {(currentPersonId || isAdmin) && <Link className="btn btn-outline" to="/mis-publicaciones"><UserRound size={20} /> Mis publicaciones</Link>}
         {canPublish && <Link className="btn btn-yellow" to={`/portal/nuevo?seccion=${publishSection}`}><PencilLine size={19} /> {isAdmin ? 'Nueva publicación' : 'Compartí con la Red'}</Link>}
       </>} />
       <label className="search-input newsletter-catalog-search"><span className="sr-only">Buscar publicaciones</span><Search size={20} aria-hidden="true" /><input type="search" value={query} onChange={event => update('buscar', event.target.value)} placeholder="Buscar por título, etiqueta, autor u organismo…" /></label>
     </Surface>
     {!listing ? <>
-      <section aria-labelledby="portal-sections"><div className="newsletter-section-heading"><h2 id="portal-sections">Secciones del Portal</h2></div>
-        <div className="portal-grid">{PORTAL_SECTIONS.map(({ id, title, description, icon: Icon }) => {
-          const count = published.filter(item => (item.section ?? COMMUNITY_SECTION) === id).length
-          return <Link className="surface portal-card" to={`/portal?seccion=${id}`} key={id}>
-            <Icon size={24} aria-hidden="true" />
-            <div><h3>{title}</h3><p>{description}</p><span className="portal-card-count"><Files size={14} aria-hidden="true" /> {count} {count === 1 ? 'publicación' : 'publicaciones'}</span></div>
-            <ArrowRight className="portal-card-arrow" size={18} aria-hidden="true" />
-          </Link>
-        })}</div>
+      {featured && <FeaturedNewsletter item={featured} />}
+      <section aria-labelledby="portal-sections">
+        <div className="newsletter-section-heading">
+          <h2 id="portal-sections">Secciones del Portal</h2>
+          <span>{PORTAL_SECTIONS.length} secciones · {published.length} {published.length === 1 ? 'publicación' : 'publicaciones'}</span>
+        </div>
+        <div className="newsletter-topic-grid">{PORTAL_SECTIONS.map(entry => <PortalSectionCard
+          key={entry.id} section={entry} people={people}
+          items={published.filter(item => (item.section ?? COMMUNITY_SECTION) === entry.id)}
+        />)}</div>
       </section>
       <nav className="portal-tag-filters" aria-label="Filtrar publicaciones por etiqueta">
         {PORTAL_TOPICS.map(({ title }) => <Link className="portal-tag" key={title} to={portalTagLink(title)}>#{title}</Link>)}
         <Link className="portal-view-all" to="/portal?vista=todas">Ver todas las publicaciones <ArrowRight size={16} /></Link>
       </nav>
-      {featured && <FeaturedNewsletter item={featured} />}
       {published.length > 0 && <LatestNewsletters items={published} people={people} />}
     </> : <>
       <Surface className="portal-listing-heading">

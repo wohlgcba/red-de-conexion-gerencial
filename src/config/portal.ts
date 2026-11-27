@@ -3,12 +3,12 @@ import { BookOpen, Compass, GraduationCap, Radar, Share2, Wrench } from 'lucide-
 export const COMMUNITY_SECTION = 'comparti-con-la-red'
 
 export const PORTAL_SECTIONS = [
-  { id: 'conocimiento-en-red', title: 'Conocimiento en Red', description: 'Un espacio para compartir herramientas, experiencias y aprendizajes que potencien la gestión pública.', icon: BookOpen },
-  { id: 'red-en-practica', title: 'RED EN PRÁCTICA', description: 'Un espacio de recursos, herramientas y experiencias para llevar nuevas ideas a la gestión cotidiana.', icon: Compass },
-  { id: 'caja-de-herramientas', title: 'CAJA DE HERRAMIENTAS', description: 'Recursos y contenidos para fortalecer el liderazgo y mejorar la gestión de los equipos.', icon: Wrench },
-  { id: 'espacio-de-aprendizaje', title: 'ESPACIO DE APRENDIZAJE', description: 'Contenidos, experiencias y recursos para el desarrollo profesional de la Red Gerencial.', icon: GraduationCap },
-  { id: 'radar-gerencial', title: 'RADAR GERENCIAL', description: 'Ideas, tendencias y herramientas para estar actualizados y potenciar la gestión.', icon: Radar },
-  { id: COMMUNITY_SECTION, title: 'Compartí con la Red', description: 'Compartí una experiencia, herramienta o aprendizaje. La administración revisará tu aporte antes de publicarlo.', icon: Share2 },
+  { id: 'conocimiento-en-red', title: 'Conocimiento en Red', description: 'Un espacio para compartir herramientas, experiencias y aprendizajes que potencien la gestión pública.', icon: BookOpen, visualTheme: 'Ambiente' },
+  { id: 'red-en-practica', title: 'RED EN PRÁCTICA', description: 'Un espacio de recursos, herramientas y experiencias para llevar nuevas ideas a la gestión cotidiana.', icon: Compass, visualTheme: 'Datos' },
+  { id: 'caja-de-herramientas', title: 'CAJA DE HERRAMIENTAS', description: 'Recursos y contenidos para fortalecer el liderazgo y mejorar la gestión de los equipos.', icon: Wrench, visualTheme: 'Gestión' },
+  { id: 'espacio-de-aprendizaje', title: 'ESPACIO DE APRENDIZAJE', description: 'Contenidos, experiencias y recursos para el desarrollo profesional de la Red Gerencial.', icon: GraduationCap, visualTheme: 'Innovación pública' },
+  { id: 'radar-gerencial', title: 'RADAR GERENCIAL', description: 'Ideas, tendencias y herramientas para estar actualizados y potenciar la gestión.', icon: Radar, visualTheme: 'Participación' },
+  { id: COMMUNITY_SECTION, title: 'Compartí con la Red', description: 'Compartí una experiencia, herramienta o aprendizaje. La administración revisará tu aporte antes de publicarlo.', icon: Share2, visualTheme: 'Procesos' },
 ] as const
 
 export type PortalSection = (typeof PORTAL_SECTIONS)[number]['id']
