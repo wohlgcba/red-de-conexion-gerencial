@@ -1,6 +1,6 @@
 .app-shell .app-header{overflow:visible;gap:18px;z-index:14;height:auto;min-height:60px;padding-top:9px;padding-bottom:9px}
 .app-header .header-title{min-width:0;flex:1;display:flex;align-items:center;gap:9px;font-size:clamp(17px,2.1vw,31px)}
-.header-network-mark{position:relative;overflow:hidden;flex:none;width:clamp(20px,3.7vw,40px);aspect-ratio:1.055}.header-network-logo{position:absolute;width:357%;max-width:none;height:auto;left:-195%;top:-14%}
+.header-network-logo{display:block;flex:none;width:clamp(72px,13.2vw,144px);height:auto}
 .header-user-area{position:relative;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:2}
 .header-institutional-logo img{width:123.2px;height:auto;max-height:36.4px;object-fit:contain}
 .header-user-separator{width:1px;height:35px;background:#ffffff40;margin:0 3px}
@@ -39,6 +39,13 @@
 .header-profile-fallback{padding-top:16px;line-height:1.6;color:#567692;font-size:14.4px}
 @media(max-width:1100px){.header-user-area{gap:8px}.header-institutional-logo img{width:101.5px}.app-header{gap:16px}}
 @media(max-width:650px){.app-header{gap:10px;min-height:80px;height:auto;padding-top:10px;padding-bottom:10px}.app-header .header-title{max-width:none;font-size:clamp(15px,4.1vw,18px);line-height:1.2}.header-user-area{gap:3px}.header-institutional-logo img{width:56px;max-height:22.4px}.header-user-separator{height:28px;margin:0 4px}.header-icon-button{width:34px}.header-user-button{gap:3px;padding:3px}.header-avatar,.header-avatar-photo{width:36px!important;height:36px!important;font-size:14.4px!important}.header-icon-button>svg{width:20px}.header-dropdown{max-width:calc(100vw - 46px);top:calc(100% + 14px)}.header-profile-backdrop{padding:12px}.header-profile-dialog{max-height:calc(100dvh - 24px)}}
+@media(max-width:650px){
+  .app-shell .app-header{display:grid;grid-template-columns:minmax(0,1fr) auto;row-gap:6px}
+  .app-header .header-title{display:contents}
+  .header-network-logo{grid-area:1/1}
+  .header-user-area{grid-area:1/2}
+  .header-title>span{grid-area:2/1/3/3}
+}
 @media(max-width:380px){.app-header{gap:7px;padding-left:10px;padding-right:10px}.header-institutional-logo img{width:46.9px}.header-user-separator{margin:0 2px}.header-user-button>svg{width:12px}.header-user-area{gap:2px}}
 
 .header-notification-link{display:block;font-size:12px;color:#0064a2;margin:0 16px 12px 32px;text-decoration:underline}
