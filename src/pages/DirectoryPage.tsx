@@ -96,7 +96,7 @@ export function DirectoryPage() {
 
   return <div className="directory-page">
     <Surface className="directory-page-intro">
-      <div className="directory-title-block"><h1>Directorio de la Red</h1><p>Buscá y conectá con integrantes, áreas y conocimientos de la Red de gerentes y mandos medios.</p></div>
+      <div className="directory-title-block"><h1>Directorio de la Red</h1><p>Buscá y conectá con integrantes, áreas y conocimientos de la Red Gerencial y Mandos Medios del GCBA.</p></div>
       <div className="directory-summary">
         <div className="directory-kpis"><div><span><UsersRound size={23} /></span><p>Integrantes<strong>{people.length.toLocaleString('es-AR')}</strong></p></div><div><span><Building2 size={23} /></span><p>Direcciones representadas<strong>{representedDirectorates(people).toLocaleString('es-AR')}</strong></p></div><div><span><Landmark size={23} /></span><p>Ministerios / Áreas<strong>{options.ministries.length}</strong></p></div></div>
         {isAdmin && <Button variant="yellow" onClick={() => setEditing('new')}><Plus size={17} /> Agregar integrante</Button>}

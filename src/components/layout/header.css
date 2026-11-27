@@ -1,7 +1,7 @@
-.app-shell .app-header{overflow:visible;gap:18px;z-index:14;height:auto;min-height:60px;padding-top:9px;padding-bottom:9px}
-.app-header .header-title{min-width:0;flex:1;display:flex;align-items:center;gap:9px;font-size:clamp(17px,2.1vw,31px)}
+.app-shell .app-header{display:grid;grid-template-columns:minmax(290px,1fr) minmax(0,2fr) minmax(290px,1fr);align-items:center;overflow:visible;gap:18px;z-index:14;height:auto;min-height:60px;padding-top:9px;padding-bottom:9px}
+.app-header .header-title{min-width:0;text-align:center;text-wrap:balance;font-size:clamp(18px,2.1vw,31px)}
 .header-network-logo{display:block;flex:none;width:clamp(72px,13.2vw,144px);height:auto}
-.header-user-area{position:relative;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:2}
+.header-user-area{position:relative;display:flex;align-items:center;justify-self:end;gap:12px;flex-shrink:0;z-index:2}
 .header-institutional-logo img{width:123.2px;height:auto;max-height:36.4px;object-fit:contain}
 .header-user-separator{width:1px;height:35px;background:#ffffff40;margin:0 3px}
 .header-icon-button,.header-user-button{display:flex;align-items:center;justify-content:center;flex:none;color:white;border:0;background:transparent;min-height:44px;padding:0;cursor:pointer;border-radius:999px}
@@ -24,7 +24,6 @@
 .header-notification-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 15px 7px}
 .header-notification-heading h2{font-size:15.6px;font-weight:600}
 .header-notification-heading>span{font-size:10.8px;background:#edf5fa;border-radius:10px;color:#5c7a91;padding:3px 6px}
-.header-demo-note{padding:0 15px 12px;color:#67859b;font-size:12px;line-height:1.4;border-bottom:1px solid #e5eef5}
 .header-notification-list{list-style:none;margin:0;padding:5px}
 .header-notification-list button{display:flex;align-items:flex-start;gap:9px;width:100%;padding:12px 10px;border:0;border-radius:8px;background:transparent;text-align:left;font-size:13.2px;line-height:1.5;color:#214c74}
 .header-notification-list button:hover{background:#edf7fc}
@@ -39,12 +38,11 @@
 .header-profile-fallback{padding-top:16px;line-height:1.6;color:#567692;font-size:14.4px}
 @media(max-width:1100px){.header-user-area{gap:8px}.header-institutional-logo img{width:101.5px}.app-header{gap:16px}}
 @media(max-width:650px){.app-header{gap:10px;min-height:80px;height:auto;padding-top:10px;padding-bottom:10px}.app-header .header-title{max-width:none;font-size:clamp(15px,4.1vw,18px);line-height:1.2}.header-user-area{gap:3px}.header-institutional-logo img{width:56px;max-height:22.4px}.header-user-separator{height:28px;margin:0 4px}.header-icon-button{width:34px}.header-user-button{gap:3px;padding:3px}.header-avatar,.header-avatar-photo{width:36px!important;height:36px!important;font-size:14.4px!important}.header-icon-button>svg{width:20px}.header-dropdown{max-width:calc(100vw - 46px);top:calc(100% + 14px)}.header-profile-backdrop{padding:12px}.header-profile-dialog{max-height:calc(100dvh - 24px)}}
-@media(max-width:650px){
-  .app-shell .app-header{display:grid;grid-template-columns:minmax(0,1fr) auto;row-gap:6px}
-  .app-header .header-title{display:contents}
+@media(max-width:1150px){
+  .app-shell .app-header{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}
   .header-network-logo{grid-area:1/1}
   .header-user-area{grid-area:1/2}
-  .header-title>span{grid-area:2/1/3/3}
+  .app-header .header-title{grid-area:2/1/3/3}
 }
 @media(max-width:380px){.app-header{gap:7px;padding-left:10px;padding-right:10px}.header-institutional-logo img{width:46.9px}.header-user-separator{margin:0 2px}.header-user-button>svg{width:12px}.header-user-area{gap:2px}}
 

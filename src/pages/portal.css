@@ -21,3 +21,13 @@ a.portal-tag:hover,.portal-tag-options label:hover{border-color:#428bb1;backgrou
 .portal-tag-picker summary{cursor:pointer;color:#075886}
 .portal-tag-picker details>div{margin:7px 0}
 .portal-tag-picker ul{padding-left:22px;list-style:disc}
+
+.portal-publishing-guide{display:grid;gap:10px;padding:19px;color:#073b68}
+.portal-publishing-guide h3{font-size:1.1rem;font-weight:700}
+.portal-publishing-guide h4{font-size:.95rem;font-weight:700}
+.portal-publishing-guide p,.portal-publishing-guide li{font-size:.88rem;color:#325b7f;line-height:1.55}
+.portal-publishing-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.portal-publishing-steps ul,.portal-publishing-steps ol{display:grid;gap:5px;padding-left:20px;margin-top:5px}
+.portal-publishing-steps ul{list-style:disc}
+.portal-publishing-steps ol{list-style:decimal}
+@media(max-width:650px){.portal-publishing-steps{grid-template-columns:1fr}}

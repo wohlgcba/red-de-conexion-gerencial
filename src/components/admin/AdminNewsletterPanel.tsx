@@ -27,7 +27,7 @@ export function AdminNewsletterPanel({ navigation }: { navigation?: ReactNode })
   const change = (field: keyof Filters, value: string) => setFilters(previous => ({ ...previous, [field]: value, page: 1 }))
   if (!isAdmin) return <Surface className="not-found"><h1>Acceso no autorizado</h1></Surface>
   return <div className="editorial-page">
-    <Surface className="administration-intro"><div><h1>Administración</h1><p>Gestioná el contenido de la Red de gerentes y mandos medios.</p></div><div className="administration-kpis">
+    <Surface className="administration-intro"><div><h1>Administración</h1><p>Gestioná el contenido de la Red Gerencial y Mandos Medios del GCBA.</p></div><div className="administration-kpis">
       {([{ id: 'pending', label: 'Pendientes de revisión', icon: Clock3 }, { id: 'changes', label: 'Cambios solicitados', icon: FilePenLine }, { id: 'published', label: 'Publicados', icon: Send }, { id: 'retired', label: 'Ocultos / archivados', icon: Archive }] as const).map(value => <button key={value.id} type="button" onClick={() => selectTray(value.id)}><span><value.icon size={23} /></span><div>{value.label}<strong>{query.data?.counts[value.id] ?? '—'}</strong></div></button>)}
     </div></Surface>
     {navigation}

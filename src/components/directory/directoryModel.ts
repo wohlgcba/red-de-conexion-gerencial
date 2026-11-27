@@ -7,6 +7,10 @@ export const EMPTY_DIRECTORY_FILTERS: DirectoryFilters = { ministry: '', secreta
 export const DIRECTORY_PAGE_SIZE = 12
 const collator = new Intl.Collator('es-AR', { sensitivity: 'base', numeric: true })
 
+export function directoryName(person: Pick<Person, 'familyName' | 'givenName' | 'name'>) {
+  return [person.familyName.trim(), person.givenName.trim()].filter(Boolean).join(', ') || person.name.trim()
+}
+
 export function directoryOptions(people: Person[], filters: DirectoryFilters) {
   const unique = (values: string[]) => [...new Set(values.filter(value => value.trim()))].sort(collator.compare)
   const inMinistry = people.filter(person => !filters.ministry || person.ministry === filters.ministry)
@@ -33,7 +37,7 @@ export function getDirectoryResults(people: Person[], newsletters: Newsletter[],
     (!filters.ministry || person.ministry === filters.ministry) &&
     (!filters.secretariat || person.secretariat === filters.secretariat) &&
     (!filters.directorate || person.directorate === filters.directorate) &&
-    (!search || norm([person.name, person.givenName, person.familyName, person.role, person.ministry, person.secretariat, person.directorate].join(' ')).includes(search)),
+    (!search || norm([person.name, directoryName(person), person.familyName + ' ' + person.givenName, person.role, person.ministry, person.secretariat, person.directorate].join(' ')).includes(search)),
   )
   const activity = new Map<string, string>()
   if (sort === 'recent') {

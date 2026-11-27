@@ -4,7 +4,7 @@ import type { Newsletter, Person } from '../types'
 export function getNewsletterAuthor(item: Pick<Newsletter, 'authorId'>, people: Person[]) {
   return people.find(person => person.id === item.authorId) ?? {
     id: '', name: item.authorId ? 'Autor no disponible' : 'Administración de la Red',
-    role: item.authorId ? '' : 'Equipo administrador', ministry: 'Red de gerentes y mandos medios',
+    role: item.authorId ? '' : 'Equipo administrador', ministry: 'Red Gerencial y Mandos Medios del GCBA',
     email: '', avatar: 0, photoUrl: undefined as string | undefined,
   }
 }

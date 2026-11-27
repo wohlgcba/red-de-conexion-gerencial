@@ -27,7 +27,7 @@ export default function NewsletterRichTextEditor({ initialContent, disabled, onC
   const extensions = useMemo(() => [
     StarterKit.configure({ heading: { levels: [2, 3] }, code: false, codeBlock: false, horizontalRule: false, strike: false, underline: false,
       link: { openOnClick: false, enableClickSelection: true, defaultProtocol: 'https', isAllowedUri: url => Boolean(normalizeNewsletterLink(url)), HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' } } }),
-    Placeholder.configure({ placeholder: 'Escribí acá el contenido de tu newsletter…' }),
+    Placeholder.configure({ placeholder: 'Escribí acá el contenido de tu publicación…' }),
     Extension.create({ name: 'newsletterControls', addKeyboardShortcuts() { return { 'Mod-k': () => { openLink(this.editor); return true } } },
       addProseMirrorPlugins() { return [new Plugin({ filterTransaction(transaction, state) {
         if (!transaction.docChanged) return true
@@ -40,7 +40,7 @@ export default function NewsletterRichTextEditor({ initialContent, disabled, onC
       } })] } }),
   ], [openLink])
   const editor = useEditor({ extensions, content: initialContent, shouldRerenderOnTransaction: false,
-    editorProps: { attributes: { class: 'newsletter-prose newsletter-editor-content', role: 'textbox', 'aria-label': 'Contenido del newsletter', 'aria-multiline': 'true', 'aria-describedby': 'newsletter-editor-count' },
+    editorProps: { attributes: { class: 'newsletter-prose newsletter-editor-content', role: 'textbox', 'aria-label': 'Contenido de la publicación', 'aria-multiline': 'true', 'aria-describedby': 'newsletter-editor-count' },
       transformPastedHTML: sanitizeNewsletterHtml },
     onCreate: ({ editor: instance }) => onChange({ html: sanitizeNewsletterHtml(instance.getHTML()), text: textOf(instance.state.doc) }),
     onUpdate: ({ editor: instance }) => { setNotice(''); onChange({ html: sanitizeNewsletterHtml(instance.getHTML()), text: textOf(instance.state.doc) }) },

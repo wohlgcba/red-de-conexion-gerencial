@@ -1,4 +1,4 @@
-# Red de gerentes y mandos medios
+# Red Gerencial y Mandos Medios del GCBA
 
 Aplicación React, Vite y TypeScript conectada al schema `red_conexion_gerencial`
 del proyecto Supabase **BASE GCBA** (`pnhskmlejdaklwkvasxp`). Se publica en

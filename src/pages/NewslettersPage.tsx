@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, PencilLine, Search, UserRound } from 'lucide-react'
 import { FilterSelect, PageHeading, Surface } from '../components/common/UI'
 import { FeaturedNewsletter, NewsletterCard } from '../components/newsletters/NewsletterParts'
+import { CommunityPublishingGuide } from '../components/newsletters/CommunityPublishingGuide'
 import { LatestNewsletters, PortalSectionCard } from '../components/newsletters/NewsletterTopicSections'
 import { publishedByDate } from '../components/newsletters/catalogModel'
 import { useCatalog } from '../app/useCatalog'
@@ -52,7 +53,7 @@ export function NewslettersPage() {
     <Surface className="newsletter-catalog-intro">
       <PageHeading title="Portal" subtitle="Elegí una sección para ver sus publicaciones." actions={<>
         {(currentPersonId || isAdmin) && <Link className="btn btn-outline" to="/mis-publicaciones"><UserRound size={20} /> Mis publicaciones</Link>}
-        {canPublish && <Link className="btn btn-yellow" to={`/portal/nuevo?seccion=${publishSection}`}><PencilLine size={19} /> {isAdmin ? 'Nueva publicación' : 'Compartí con la Red'}</Link>}
+        {canPublish && <Link className="btn btn-yellow" to={`/portal/nuevo?seccion=${publishSection}`}><PencilLine size={19} /> Crear mi publicación</Link>}
       </>} />
       <label className="search-input newsletter-catalog-search"><span className="sr-only">Buscar publicaciones</span><Search size={20} aria-hidden="true" /><input type="search" value={query} onChange={event => update('buscar', event.target.value)} placeholder="Buscar por título, etiqueta, autor u organismo…" /></label>
     </Surface>
@@ -82,6 +83,7 @@ export function NewslettersPage() {
           {'resource' in theme && <a className="portal-resource" href={theme.resource.url} target="_blank" rel="noreferrer">{theme.resource.title}</a>}
         </>}
       </Surface>
+      {section?.id === COMMUNITY_SECTION && <CommunityPublishingGuide />}
       <Surface className="newsletter-catalog-results">
         <div className="portal-filters">
           <FilterSelect value={section?.id ?? ''} onChange={event => update('seccion', event.target.value)} aria-label="Filtrar por sección"><option value="">Todas las secciones</option>{PORTAL_SECTIONS.map(entry => <option key={entry.id} value={entry.id}>{entry.title}</option>)}</FilterSelect>

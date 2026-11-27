@@ -23,3 +23,8 @@
 .article-body .newsletter-prose blockquote { border-left: 3px solid #58badf; border-radius: 0 8px 8px 0; padding: 12px 16px; font-weight: 400; }
 .article-body .newsletter-prose blockquote::before { content: none; }
 @media(max-width:650px) { .newsletter-prose { font-size: 14.4px; } .newsletter-prose h2 { font-size: 19.2px; } .newsletter-prose h3 { font-size: 16.8px; } }
+
+.newsletter-videos,.newsletter-video{display:grid;gap:10px}
+.newsletter-video{justify-items:start;padding:12px;border:1px solid #dce9f4;border-radius:10px}
+.newsletter-video iframe{width:100%;aspect-ratio:16/9;min-height:200px;border:0;border-radius:8px;background:#092d48}
+.newsletter-video a{display:inline-flex;align-items:center;gap:6px;color:#0064a2;text-decoration:underline;font-size:.87rem}
