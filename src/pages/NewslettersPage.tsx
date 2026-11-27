@@ -61,9 +61,9 @@ export function NewslettersPage() {
         <div className="portal-grid">{PORTAL_SECTIONS.map(({ id, title, description, icon: Icon }) => {
           const count = published.filter(item => (item.section ?? COMMUNITY_SECTION) === id).length
           return <Link className="surface portal-card" to={`/portal?seccion=${id}`} key={id}>
-            <div className="portal-section-banner" data-section={id}><h3>{title}</h3><Icon size={52} aria-hidden="true" /></div>
-            <div className="portal-card-copy"><p>{description}</p></div>
-            <div className="portal-card-footer"><span><Files size={15} aria-hidden="true" /> {count} {count === 1 ? 'publicación' : 'publicaciones'}</span><ArrowRight size={18} aria-hidden="true" /></div>
+            <Icon size={24} aria-hidden="true" />
+            <div><h3>{title}</h3><p>{description}</p><span className="portal-card-count"><Files size={14} aria-hidden="true" /> {count} {count === 1 ? 'publicación' : 'publicaciones'}</span></div>
+            <ArrowRight className="portal-card-arrow" size={18} aria-hidden="true" />
           </Link>
         })}</div>
       </section>
