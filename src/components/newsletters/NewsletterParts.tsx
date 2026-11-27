@@ -26,7 +26,7 @@ export function NewsletterCard({ item }: { item: Newsletter }) {
   return <article className="newsletter-card">
     <div className="newsletter-thumb"><img src={item.image} alt="" loading="lazy" /><span className="thumb-label newsletter-topic-thumb" style={tematicaStyle(item.topic)}>{item.topic}</span></div>
     <div className="newsletter-card-body"><h3>{item.title}</h3><p>{item.subtitle}</p><div className="mini-author"><Avatar name={author.name} photoUrl={author.photoUrl} size={30} /><span><strong>{author.name}</strong><small>{author.role}<br />{author.ministry}</small></span></div></div>
-    <div className="newsletter-card-footer"><span><CalendarDays size={13} /> {formatDate(item.date)}</span><Link className="btn btn-outline" to={`/newsletters/${item.id}`}>Leer newsletter</Link></div>
+    <div className="newsletter-card-footer"><span><CalendarDays size={13} /> {formatDate(item.date)}</span><Link className="btn btn-outline" to={`/portal/${item.id}`}>Leer publicación</Link></div>
     {item.status === 'publicado' && <NewsletterReactions newsletterId={item.id} compact />}
   </article>
 }
@@ -34,5 +34,5 @@ export function NewsletterCard({ item }: { item: Newsletter }) {
 export function FeaturedNewsletter({ item }: { item: Newsletter }) {
   const { people } = useCatalog()
   const author = getNewsletterAuthor(item, people)
-  return <section className="newsletter-featured-compact" aria-label="Newsletter destacado"><img src={item.image} alt="" /><div><span className="newsletter-featured-label"><Star size={14} fill="currentColor" aria-hidden="true" /> Destacado</span><h2>{item.title}</h2><p>{author.name} · {author.ministry} · <TopicChip topic={item.topic} catalog /></p></div><Link className="btn btn-primary" to={`/newsletters/${item.id}`}>Leer newsletter</Link></section>
+  return <section className="newsletter-featured-compact" aria-label="Publicación destacada"><img src={item.image} alt="" /><div><span className="newsletter-featured-label"><Star size={14} fill="currentColor" aria-hidden="true" /> Destacado</span><h2>{item.title}</h2><p>{author.name} · {author.ministry} · <TopicChip topic={item.topic} catalog /></p></div><Link className="btn btn-primary" to={`/portal/${item.id}`}>Leer publicación</Link></section>
 }

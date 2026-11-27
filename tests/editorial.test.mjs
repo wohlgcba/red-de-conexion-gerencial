@@ -11,7 +11,7 @@ test('editorial versions, public projection, moderation, audit, notifications an
  create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
- create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,owner_id text);
+ create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,owner_id text,metadata jsonb);
  create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;`)
  for(const name of ['red_conexion_gerencial.sql','rcg_crud.sql','rcg_user_accounts.sql','rcg_organization.sql','rcg_administration.sql','rcg_administration_intake.sql','rcg_admin_newsletters.sql','rcg_newsletter_rich_text.sql','rcg_newsletter_reactions.sql'])await db.exec(await migration(name))
  for(let n=1;n<=3;n++)await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[uid(n),`editorial${n}@example.test`])
@@ -118,6 +118,56 @@ test('editorial versions, public projection, moderation, audit, notifications an
  await actor(3);assert.equal((await db.query('select name from storage.objects where name=$1',[oldCover])).rows.length,1)
  assert.equal((await db.query('select name from storage.objects where name=$1',[newCover])).rows.length,0)
  await actor(1);assert.equal((await db.query('select name from storage.objects where name=$1',[newCover])).rows.length,1)
- await db.exec('reset role');assert.equal((await db.query("select count(*) as total from rcg_private.newsletter_email_outbox where state='sent'")).rows[0].total,0,'no simulated email delivery')
+ await db.exec('reset role')
+ await t.test('Portal permissions and attachments follow the approved editorial version', async () => {
+  await db.exec(await migration('rcg_portal.sql'))
+  await db.exec(await migration('rcg_portal.sql'))
+  await db.exec('grant insert on storage.objects to authenticated')
+  const uploaded = (name, mime) => db.query(
+   "insert into storage.objects(bucket_id,name,owner_id,metadata) values('rcg-portal-attachments',$1,$2,jsonb_build_object('mimetype',$3::text))",
+   [name, name.split('/')[0], mime])
+  const pdf = 'application/pdf'
+  const docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  const path = `${uid(2)}/${uid(11)}.docx`
+  const previewPath = `${uid(2)}/${uid(12)}.pdf`
+  const replacement = `${uid(2)}/${uid(13)}.pdf`
+  const foreign = `${uid(3)}/${uid(14)}.pdf`
+  const adminPath = `${uid(1)}/${uid(15)}.pdf`
+  const files = [{ path, previewPath, name: 'Guía de trabajo.docx', mime: docx }]
+  const accessible = async path => (await db.query('select name from storage.objects where name=$1',[path])).rows.length === 1
+  const section = 'caja-de-herramientas'
+  const community = 'comparti-con-la-red'
+  assert.equal((await root(legacy.id)).portal_section, community)
+  await actor(3); await uploaded(foreign, pdf)
+  await actor(2); await uploaded(path, docx); await uploaded(previewPath, pdf); await uploaded(replacement, pdf)
+  await assert.rejects(() => uploaded(adminPath, pdf), /row-level security/)
+  await assert.rejects(() => save(null,0,content('Texto',{portal_section:section}),'borrador'), /Solo Administración/)
+  await assert.rejects(() => save(null,0,content('Texto',{portal_section:section}),'pendiente'), /Solo Administración/)
+  await assert.rejects(() => save(null,0,content('',{attachments:[{path,name:'Guía',mime:docx}]}),'pendiente'), /vista previa/)
+  await assert.rejects(() => save(null,0,content('',{attachments:[{path:foreign,name:'Ajeno',mime:pdf}]}),'pendiente'), /no pertenece/)
+  const post = await save(null,0,content('',{attachments:files,portal_section:community}),'pendiente')
+  await actor(3); assert.equal(await root(post), undefined); assert.equal(await accessible(path), false); assert.equal(await accessible(previewPath), false)
+  await actor(1); assert.equal(await accessible(path), true); assert.equal(await accessible(previewPath), true); await decide(post,'publicado')
+  await uploaded(adminPath,pdf)
+  const adminPost = await save(null,0,content('',{portal_section:section,attachments:[{path:adminPath,name:'Herramienta.pdf',mime:pdf}]}),'publicado')
+  assert.equal((await root(adminPost)).portal_section, section)
+  await actor(2)
+  const revised = [{ path:replacement, name:'Guía actualizada.pdf', mime:pdf }]
+  await save(post,(await root(post)).version,content('',{attachments:revised,portal_section:community}),'pendiente')
+  assert.deepEqual((await rpc('editorial_my_work')).find(x=>x.id===post).attachments,revised)
+  assert.equal((await db.query('delete from storage.objects where name=$1 returning name',[replacement])).rows.length,0)
+  await actor(3)
+  assert.deepEqual((await root(post)).attachments,files)
+  assert.equal(await accessible(previewPath),true); assert.equal(await accessible(replacement), false); assert.equal(await accessible(adminPath),true)
+  await actor(1); await decide(post,'publicado')
+  await actor(3)
+  assert.deepEqual((await root(post)).attachments,revised)
+  assert.equal(await accessible(previewPath),false); assert.equal(await accessible(replacement),true)
+  await actor(1); await decide(post,'hide','Retiro temporal del recurso.')
+  await actor(3); assert.equal(await accessible(replacement),false)
+  await db.exec('reset role')
+ })
+ await db.exec('reset role')
+ assert.equal((await db.query("select count(*) as total from rcg_private.newsletter_email_outbox where state='sent'")).rows[0].total,0,'no simulated email delivery')
  assert((await db.query('select count(*) as total from rcg_private.newsletter_editorial_audit')).rows[0].total>10)
 })

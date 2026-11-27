@@ -1,4 +1,4 @@
-# Red de Conexión Gerencial
+# Red de gerentes y mandos medios
 
 Aplicación React, Vite y TypeScript conectada al schema `red_conexion_gerencial`
 del proyecto Supabase **BASE GCBA** (`pnhskmlejdaklwkvasxp`). Se publica en
@@ -18,13 +18,13 @@ se consultan en la aplicación: no son valores fijos del desarrollo.
 | Sección | Funciones | Acceso |
 | --- | --- | --- |
 | Directorio | Búsqueda, filtros, perfiles y copia de contactos. | Integrantes y administradores |
-| Newsletters | Publicaciones, reacciones, editor y publicaciones propias. | Integrantes y administradores |
+| Portal | Secciones, ejes temáticos, publicaciones, recursos adjuntos y reacciones. | Integrantes y administradores |
 | Administración | Solicitudes, Directorio gerencial, Cruce con Dotación y revisión editorial. | Administradores |
 | Métricas | Evolución de integrantes, ingresos, lecturas y búsquedas. | Administradores |
 | Mi cuenta | Perfil, foto, solicitudes y contraseña. | Usuarios autenticados, según su habilitación |
 
-El ingreso abre `/newsletters`. El menú de usuario permite acceder a
-`/mi-cuenta` y `/mis-newsletters`. El formulario de ingreso está disponible en
+El ingreso abre `/portal`. Las publicaciones propias se gestionan en
+`/mis-publicaciones`. El formulario de ingreso está disponible en
 `/solicitar-acceso`, antes de tener acceso al Directorio.
 
 ## Directorio
@@ -74,6 +74,21 @@ Los newsletters tienen editor de texto enriquecido, portadas, reacciones e
 historial editorial. Administración permite solicitar cambios, aprobar,
 corregir, ocultar, archivar y restaurar. Una edición pendiente conserva la versión
 publicada hasta su aprobación. El filtro editorial abre en **Todos**.
+
+## Portal
+
+Los integrantes envían publicaciones a revisión desde **Compartí con la Red**.
+Administración puede publicar en las seis secciones y sigue moderando desde el
+panel editorial. Las publicaciones existentes aparecen en **Compartí con la Red**,
+con sus temáticas históricas disponibles en el filtro.
+
+Cada publicación admite hasta cinco adjuntos de 25 MB. El visor integrado abre
+PDF e imágenes. Para Word y PowerPoint, se adjunta el original y una copia en PDF
+para la vista previa. Los archivos se guardan en el bucket privado
+`rcg-portal-attachments` y se abren con URLs firmadas de corta duración.
+Cada versión editorial conserva sus propios adjuntos.
+
+Para habilitar adjuntos y publicar en las secciones institucionales, aplicar `supabase/rcg_portal.sql` después de `supabase/rcg_editorial.sql`. Durante el despliegue previo a la migración, las publicaciones de texto siguen disponibles en **Compartí con la Red**.
 
 ## Organigrama
 

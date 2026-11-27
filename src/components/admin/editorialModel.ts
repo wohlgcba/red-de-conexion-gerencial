@@ -1,10 +1,10 @@
 import type { EditorialAction, EditorialFilters, EditorialTray } from '../../types/editorial'
 export const EDITORIAL_FILTERS: EditorialFilters = { query: '', topic: '', ministry: '', author: '', status: '', sort: 'newest', page: 1, pageSize: 10 }
 export const EDITORIAL_TRAYS: { id: EditorialTray; label: string; heading: string }[] = [
-  { id: 'pending', label: 'Pendientes', heading: 'Newsletters pendientes de revisión' },
-  { id: 'changes', label: 'Cambios solicitados', heading: 'Newsletters con cambios solicitados' },
-  { id: 'published', label: 'Publicados', heading: 'Newsletters publicados' },
-  { id: 'retired', label: 'Ocultos / archivados', heading: 'Newsletters ocultos y archivados' },
+  { id: 'pending', label: 'Pendientes', heading: 'Publicaciones pendientes de revisión' },
+  { id: 'changes', label: 'Cambios solicitados', heading: 'Publicaciones con cambios solicitados' },
+  { id: 'published', label: 'Publicados', heading: 'Publicaciones aprobadas' },
+  { id: 'retired', label: 'Ocultos / archivados', heading: 'Publicaciones ocultas y archivadas' },
   { id: 'all', label: 'Todos', heading: 'Todos los newsletters' },
 ]
 export const EDITORIAL_ACTIONS: Record<EditorialAction,string> = { publicado: 'Aprobar y publicar', cambios: 'Solicitar correcciones', rechazado: 'Rechazar', hide: 'Ocultar', archive: 'Archivar', restore: 'Restaurar' }

@@ -29,6 +29,11 @@ export async function getDirectorates(people: Person[]): Promise<Directorate[]> 
   })
 }
 
+export async function isPortalReady(): Promise<boolean> {
+  const { error } = await db().from('newsletters').select('portal_section,attachments', { head: true }).limit(0)
+  return !error
+}
+
 export async function getNewsletters(): Promise<Newsletter[]> {
   const { data, error } = await db().from('newsletters').select('*').order('updated_at', { ascending: false })
   check(error)

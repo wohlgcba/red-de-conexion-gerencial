@@ -11,6 +11,7 @@ import { recordActivity } from '../services/metrics'
 import type { Directorate, Newsletter, NewsletterStatus, Person } from '../types'
 import { CatalogContext } from './useCatalog'
 import { DirectoryLoading } from '../components/directory/DirectoryLoading'
+import { removeUnattachedFiles } from '../services/portalAttachments'
 import { NewsletterCatalogError, NewsletterCatalogLoading } from '../components/newsletters/NewsletterCatalogStates'
 import { Link, Navigate } from 'react-router-dom'
 
@@ -39,6 +40,7 @@ export type Store = {
   items: Newsletter[]
   currentPersonId: string | null
   isAdmin: boolean
+  portalReady: boolean
   currentPhotoUrl?: string
   saveProfilePhoto: (file: File) => Promise<void>
   refresh: () => Promise<void>
@@ -64,6 +66,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Newsletter[]>([])
   const [currentPersonId, setCurrentPersonId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | undefined>()
   const [mustChangePassword, setMustChangePassword] = useState(false)
   const [recoveringUserId, setRecoveringUserId] = useState<string | null>(recoveryAccount)
@@ -90,7 +93,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
         setDataLoading(true)
         setError('')
         setPeople([]); setDirectorates([]); setItems([])
-        setCurrentPersonId(null); setIsAdmin(false); setMustChangePassword(false)
+        setCurrentPersonId(null); setIsAdmin(false); setPortalReady(false); setMustChangePassword(false)
         setCurrentPhotoUrl(undefined)
         setDirectoryGate(null)
         if (recoveryAccount() !== nextId) rememberRecovery(null)
@@ -147,8 +150,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
       if (!isCurrent()) return
       const [peopleResult, photos] = await Promise.all([catalog.getPeople(), profilePhotos.getProfilePhotos()])
       if (!isCurrent()) return
-      const [directoratesResult, newslettersResult] = await Promise.all([
-        catalog.getDirectorates(peopleResult), catalog.getNewsletters(),
+      const [directoratesResult, newslettersResult, portalReadyResult] = await Promise.all([
+        catalog.getDirectorates(peopleResult), catalog.getNewsletters(), catalog.isPortalReady(),
       ])
       if (!isCurrent()) return
       const directoryNames = new Map(directoratesResult.map(item => [item.id, item.name]))
@@ -157,6 +160,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
       setCurrentPhotoUrl(photos.find(photo => photo.user_id === userId)?.url)
       setDirectorates(directoratesResult)
       setItems(newslettersResult)
+      setPortalReady(portalReadyResult)
     } catch (cause) {
       if (isCurrent()) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos.')
     } finally {
@@ -172,36 +176,44 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer)
   }, [userId, refresh])
 
-  if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de Conexión Gerencial</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
+  if (!supabase) return <div className="auth-screen"><div className="auth-card"><h1>Red de gerentes y mandos medios</h1><p>Falta configurar la URL y la clave publicable de Supabase para conectar la aplicación.</p></div></div>
   if (authLoading) return <div className="auth-screen">Verificando sesión...</div>
   if (!user) return <LoginPage />
-  if (recoveringUserId === user.id) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Conexión Gerencial</div><h1>Restablecer contraseña</h1><p>Elegí una contraseña nueva para tu cuenta. Esto no cambia el estado de tu solicitud de ingreso.</p><PasswordChangeForm recovery onComplete={async () => { rememberRecovery(null); setRecoveringUserId(null); await refresh() }} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
-  if (dataLoading) return window.location.pathname.replace(/\/$/, '') === '/directorio' ? <DirectoryLoading /> : window.location.pathname.replace(/\/$/, '') === '/newsletters' ? <NewsletterCatalogLoading /> : <div className="auth-screen">Cargando la Red...</div>
-  if (directoryGate && directoryGate !== 'approved') return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Conexión Gerencial</div><h1>{directoryGate === 'pending' ? 'Solicitud pendiente de aprobación' : directoryGate === 'suspended' ? 'Acceso suspendido' : 'Solicitud no aprobada'}</h1><p>{directoryGate === 'pending' ? 'Tu solicitud está en revisión por la administración de la Red. Podrás ingresar cuando se apruebe el acceso.' : 'Contactá a la administración de la Red para consultar el estado de tu acceso.'}</p><div className="auth-actions"><Link className="btn btn-primary" to="/solicitar-acceso?vista=solicitud">Ver mi solicitud</Link><button className="btn btn-outline" onClick={() => void refresh()}>Actualizar estado</button><button className="btn btn-ghost" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div></div>
-  if (error && window.location.pathname.replace(/\/$/, '') === '/newsletters') return <NewsletterCatalogError onRetry={() => void refresh()} onSignOut={() => void requireSupabase().auth.signOut()} />
+  if (recoveringUserId === user.id) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de gerentes y mandos medios</div><h1>Restablecer contraseña</h1><p>Elegí una contraseña nueva para tu cuenta. Esto no cambia el estado de tu solicitud de ingreso.</p><PasswordChangeForm recovery onComplete={async () => { rememberRecovery(null); setRecoveringUserId(null); await refresh() }} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
+  if (dataLoading) return window.location.pathname.replace(/\/$/, '') === '/directorio' ? <DirectoryLoading /> : window.location.pathname.replace(/\/$/, '') === '/portal' ? <NewsletterCatalogLoading /> : <div className="auth-screen">Cargando la Red...</div>
+  if (directoryGate && directoryGate !== 'approved') return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de gerentes y mandos medios</div><h1>{directoryGate === 'pending' ? 'Solicitud pendiente de aprobación' : directoryGate === 'suspended' ? 'Acceso suspendido' : 'Solicitud no aprobada'}</h1><p>{directoryGate === 'pending' ? 'Tu solicitud está en revisión por la administración de la Red. Podrás ingresar cuando se apruebe el acceso.' : 'Contactá a la administración de la Red para consultar el estado de tu acceso.'}</p><div className="auth-actions"><Link className="btn btn-primary" to="/solicitar-acceso?vista=solicitud">Ver mi solicitud</Link><button className="btn btn-outline" onClick={() => void refresh()}>Actualizar estado</button><button className="btn btn-ghost" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div></div>
+  if (error && window.location.pathname.replace(/\/$/, '') === '/portal') return <NewsletterCatalogError onRetry={() => void refresh()} onSignOut={() => void requireSupabase().auth.signOut()} />
   if (error) return <div className="auth-screen"><div className="auth-card"><h1>No se pudieron cargar los datos</h1><p>{error}</p><div className="auth-actions"><button className="btn btn-primary" onClick={() => void refresh()}>Reintentar</button><button className="btn btn-outline" onClick={() => void requireSupabase().auth.signOut()}>Salir</button></div></div></div>
-  if (mustChangePassword) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de Redes · Desde adentro</div><h1>Elegí una contraseña nueva</h1><p>Para proteger tu cuenta, cambiá la contraseña inicial antes de ingresar al directorio.</p><PasswordChangeForm firstAccess onComplete={refresh} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
+  if (mustChangePassword) return <div className="auth-screen"><div className="auth-card"><div className="auth-brand">Red de gerentes y mandos medios</div><h1>Elegí una contraseña nueva</h1><p>Para proteger tu cuenta, cambiá la contraseña inicial antes de ingresar al directorio.</p><PasswordChangeForm firstAccess onComplete={refresh} /><button className="btn btn-outline auth-signout" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</button></div></div>
   if (!currentPersonId && !isAdmin) return <Navigate to="/solicitar-acceso" replace />
 
   const value: Store = {
-    user, people, directorates, items, currentPersonId, isAdmin, refresh, currentPhotoUrl,
+    user, people, directorates, items, currentPersonId, isAdmin, portalReady, refresh, currentPhotoUrl,
     saveProfilePhoto: async file => { await profilePhotos.saveProfilePhoto(file, user.id); await refresh() },
     signOut: async () => { const { error: signOutError } = await requireSupabase().auth.signOut(); if (signOutError) throw signOutError },
     savePerson: async person => { await catalog.savePerson(person); await refresh() },
     deletePerson: async id => { await catalog.deletePerson(id); await refresh() },
     upsert: async item => { const id = await catalog.saveNewsletter(item); await refresh(); return id },
-    updateStatus: async (id, status) => { const item = items.find(entry => entry.id === id); if (!item) throw new Error('Newsletter no encontrado'); await catalog.updateNewsletterStatus(item, status); await refresh() },
+    updateStatus: async (id, status) => { const item = items.find(entry => entry.id === id); if (!item) throw new Error('Publicación no encontrada'); await catalog.updateNewsletterStatus(item, status); await refresh() },
     duplicate: async id => {
       const root = items.find(item => item.id === id)
       const source = root?.workingCopy ?? root
       if (!source || (!currentPersonId && !isAdmin)) throw new Error('No se puede duplicar este newsletter.')
-      const copy: Newsletter = { ...source, id: '', title: `${source.title.slice(0, 92)} (copia)`, authorId: currentPersonId ?? '', authorUserId: user.id, status: 'borrador', featured: false, observation: undefined, version: undefined }
+      const copy: Newsletter = { ...source, section: isAdmin ? source.section : undefined, attachments: source.attachments?.filter(file => file.path.startsWith(user.id + '/') && (!file.previewPath || file.previewPath.startsWith(user.id + '/'))), id: '', title: `${source.title.slice(0, 92)} (copia)`, authorId: currentPersonId ?? '', authorUserId: user.id, status: 'borrador', featured: false, observation: undefined, version: undefined }
       const newId = await catalog.saveNewsletter(copy)
       await refresh()
       return newId
     },
-    deleteNewsletter: async id => { const path = items.find(item => item.id === id)?.imagePath; await catalog.deleteNewsletter(id); if (path) await catalog.removeCover(path).catch(() => undefined); await refresh() },
-    reviewNewsletter: async (id, status, note, featured) => { const item = items.find(entry => entry.id === id); if (!item?.version) throw new Error('Newsletter no encontrado'); await catalog.reviewNewsletter(id, item.version, status, note, featured); await refresh() },
+    deleteNewsletter: async id => {
+      const root = items.find(item => item.id === id)
+      const item = root?.workingCopy ?? root
+      const paths = item?.attachments?.flatMap(file => file.previewPath ? [file.path, file.previewPath] : [file.path]) ?? []
+      await catalog.deleteNewsletter(id)
+      await removeUnattachedFiles(paths).catch(() => undefined)
+      if (item?.imagePath) await catalog.removeCover(item.imagePath).catch(() => undefined)
+      await refresh()
+    },
+    reviewNewsletter: async (id, status, note, featured) => { const item = items.find(entry => entry.id === id); if (!item?.version) throw new Error('Publicación no encontrada'); await catalog.reviewNewsletter(id, item.version, status, note, featured); await refresh() },
     uploadCover: file => catalog.uploadCover(file, user.id),
     removeCover: catalog.removeCover,
   }

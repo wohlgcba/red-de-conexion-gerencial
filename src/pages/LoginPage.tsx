@@ -75,8 +75,7 @@ export function LoginPage() {
 
   return <div className="auth-screen">
     <div className="auth-card">
-      <div className="auth-brand">Red de Redes · Desde adentro</div>
-      <h1>RED DE CONEXIÓN GERENCIAL</h1>
+      <h1>Red de gerentes y mandos medios</h1>
       <p>Ingresá con tu correo de la Red para consultar el directorio y compartir experiencias.</p>
       <div className="auth-tabs">
         <button type="button" className={mode === 'link' ? 'active' : ''} onClick={() => { setMode('link'); setMessage('') }}><Mail size={16} /> Enlace por correo</button>

@@ -1,3 +1,4 @@
+import { COMMUNITY_SECTION } from '../config/portal'
 import { requireSupabase, SCHEMA } from '../lib/supabase'
 import { AdministrationUnavailable } from './administration'
 import { newsletterRecord } from './newsletterRecords'
@@ -10,7 +11,7 @@ export async function editorialRpc<T>(name: string, args: Record<string, unknown
   const { data, error } = await requireSupabase().schema(SCHEMA).rpc(name, args)
   if (error) {
     if (['PGRST202','42883','42703'].includes(error.code)) throw new AdministrationUnavailable('Falta activar la migración editorial rcg_editorial.sql. Los datos existentes se conservan.')
-    if (error.code === '40001') throw new Error('Otro administrador o el autor modificó este newsletter. Actualizá la revisión antes de confirmar.')
+    if (error.code === '40001') throw new Error('La publicación fue modificada por otra persona. Actualizá la revisión antes de confirmar.')
     if (error.code === '42501') throw new Error('Tu cuenta no tiene permiso para esta operación editorial.')
     throw new Error(error.code === '22023' ? error.message : 'No pudimos completar la operación editorial. Intentá nuevamente.')
   }
@@ -29,7 +30,7 @@ export async function getEditorialDetail(id: string): Promise<EditorialDetail> {
   return { item: await newsletterRecord(root), visibility: root.visibility, workingRevision: root.working_revision, publishedRevision: root.published_revision, history: result.history,
     versions: await Promise.all(result.versions.map(async version => ({ id: version.id, number: version.number, state: version.state, requestType: version.request_type,
       createdAt: version.created_at, submittedAt: version.submitted_at,
-      item: await newsletterRecord({ ...root, ...version.content, status: version.state === 'sustituida' ? 'borrador' : version.state, revision_id: version.id, revision_number: version.number, created_at: version.created_at, updated_at: version.created_at }) }))) }
+      item: await newsletterRecord({ ...root, ...version.content, portal_section: version.content.portal_section, attachments: version.content.attachments, status: version.state === 'sustituida' ? 'borrador' : version.state, revision_id: version.id, revision_number: version.number, created_at: version.created_at, updated_at: version.created_at }) }))) }
 }
 export async function getMyEditorialWork(): Promise<Newsletter[]> {
   try { return await Promise.all((await editorialRpc<NewsletterRecord[]>('editorial_my_work')).map(newsletterRecord)) }
@@ -37,7 +38,7 @@ export async function getMyEditorialWork(): Promise<Newsletter[]> {
 }
 export const saveEditorialNewsletter = (item: Newsletter, intent: EditorialIntent = item.status as EditorialIntent, note = '') => editorialRpc<string>('editorial_save', {
   p_id: item.id || null, p_expected: item.version ?? 0, p_intent: intent, p_note: note,
-  p_content: { title: item.title.trim(), subtitle: item.subtitle.trim(), topic: item.topic.trim(), summary: item.summary.trim(), body: item.body.join('\n\n'),
+  p_content: { ...((item.section || item.attachments?.length) && { portal_section: item.section ?? COMMUNITY_SECTION, attachments: item.attachments ?? [] }), title: item.title.trim(), subtitle: item.subtitle.trim(), topic: item.topic.trim(), summary: item.summary.trim(), body: item.body.join('\n\n'),
     body_html: item.bodyHtml ? sanitizeNewsletterHtml(item.bodyHtml) : null, image_path: item.imagePath ?? null, tags: item.tags, reading_minutes: item.readingMinutes },
 })
 export const decideEditorial = (detail: EditorialDetail, action: EditorialAction, note: string, featured: boolean) => editorialRpc<void>('editorial_decide', {

@@ -1,8 +1,8 @@
 .app-shell .app-header{overflow:visible;gap:18px;z-index:14;height:auto;min-height:60px;padding-top:9px;padding-bottom:9px}
-.app-header .header-title{min-width:0;flex:1}
-.header-network-logo{display:block;width:clamp(90px,16.5vw,180px);max-width:100%;height:auto}
+.app-header .header-title{min-width:0;flex:1;display:flex;align-items:center;gap:9px;font-size:clamp(17px,2.1vw,31px)}
+.header-network-mark{position:relative;overflow:hidden;flex:none;width:clamp(20px,3.7vw,40px);aspect-ratio:1.055}.header-network-logo{position:absolute;width:357%;max-width:none;height:auto;left:-195%;top:-14%}
 .header-user-area{position:relative;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:2}
-.header-institutional-logo img{width:176px;height:auto;max-height:52px;object-fit:contain}
+.header-institutional-logo img{width:123.2px;height:auto;max-height:36.4px;object-fit:contain}
 .header-user-separator{width:1px;height:35px;background:#ffffff40;margin:0 3px}
 .header-icon-button,.header-user-button{display:flex;align-items:center;justify-content:center;flex:none;color:white;border:0;background:transparent;min-height:44px;padding:0;cursor:pointer;border-radius:999px}
 .header-icon-button{width:42px;position:relative}
@@ -37,15 +37,15 @@
 .header-profile-dialog{width:min(480px,100%);max-height:calc(100dvh - 40px);overflow:auto;border-radius:16px;background:white;box-shadow:0 14px 45px #07334f33}
 .header-profile-dialog .profile-panel{position:static;width:100%;border-radius:16px;box-shadow:none;overflow:visible;padding:20px}
 .header-profile-fallback{padding-top:16px;line-height:1.6;color:#567692;font-size:14.4px}
-@media(max-width:1100px){.header-user-area{gap:8px}.header-institutional-logo img{width:145px}.app-header{gap:16px}}
-@media(max-width:650px){.app-header{gap:10px;min-height:80px;height:auto;padding-top:10px;padding-bottom:10px}.app-header .header-title{max-width:none;font-size:20.4px;line-height:1.2}.header-user-area{gap:3px}.header-institutional-logo img{width:80px;max-height:32px}.header-user-separator{height:28px;margin:0 4px}.header-icon-button{width:34px}.header-user-button{gap:3px;padding:3px}.header-avatar,.header-avatar-photo{width:36px!important;height:36px!important;font-size:14.4px!important}.header-icon-button>svg{width:20px}.header-dropdown{max-width:calc(100vw - 46px);top:calc(100% + 14px)}.header-profile-backdrop{padding:12px}.header-profile-dialog{max-height:calc(100dvh - 24px)}}
-@media(max-width:380px){.app-header{gap:7px;padding-left:10px;padding-right:10px}.app-header .header-title{font-size:16.8px}.header-institutional-logo img{width:67px}.header-user-separator{margin:0 2px}.header-user-button>svg{width:12px}.header-user-area{gap:2px}}
+@media(max-width:1100px){.header-user-area{gap:8px}.header-institutional-logo img{width:101.5px}.app-header{gap:16px}}
+@media(max-width:650px){.app-header{gap:10px;min-height:80px;height:auto;padding-top:10px;padding-bottom:10px}.app-header .header-title{max-width:none;font-size:clamp(15px,4.1vw,18px);line-height:1.2}.header-user-area{gap:3px}.header-institutional-logo img{width:56px;max-height:22.4px}.header-user-separator{height:28px;margin:0 4px}.header-icon-button{width:34px}.header-user-button{gap:3px;padding:3px}.header-avatar,.header-avatar-photo{width:36px!important;height:36px!important;font-size:14.4px!important}.header-icon-button>svg{width:20px}.header-dropdown{max-width:calc(100vw - 46px);top:calc(100% + 14px)}.header-profile-backdrop{padding:12px}.header-profile-dialog{max-height:calc(100dvh - 24px)}}
+@media(max-width:380px){.app-header{gap:7px;padding-left:10px;padding-right:10px}.header-institutional-logo img{width:46.9px}.header-user-separator{margin:0 2px}.header-user-button>svg{width:12px}.header-user-area{gap:2px}}
 
 .header-notification-link{display:block;font-size:12px;color:#0064a2;margin:0 16px 12px 32px;text-decoration:underline}
 
 @media(min-width:901px){
   .header-user-area{gap:15px}
-  .header-institutional-logo img{display:block;width:clamp(180px,17.25vw,255px);max-height:72px}
+  .header-institutional-logo img{display:block;width:clamp(126px,12.075vw,178.5px);max-height:50.4px}
   .header-user-separator{height:48px;margin:0 4.5px}
   .header-icon-button{width:44px;min-height:44px}
   .header-icon-button>svg{width:22.5px;height:22.5px}

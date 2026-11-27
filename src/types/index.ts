@@ -1,3 +1,6 @@
+import type { PortalSection } from '../config/portal'
+import type { PortalAttachment } from '../services/portalAttachments'
+
 export type NewsletterStatus = 'borrador' | 'pendiente' | 'publicado' | 'cambios' | 'archivado' | 'rechazado' | 'oculto'
 
 export interface Person {
@@ -35,6 +38,8 @@ export interface Directorate {
 }
 
 export interface Newsletter {
+  section?: PortalSection
+  attachments?: PortalAttachment[]
   id: string
   title: string
   subtitle: string

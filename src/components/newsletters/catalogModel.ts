@@ -25,5 +25,5 @@ export type NewsletterTopicGroup = ReturnType<typeof groupNewsletters>[number]
 
 export function topicLink(topic: string) {
   // Keep the exact data value: no slug collisions or new database identifiers.
-  return `/newsletters?${new URLSearchParams({ tematica: topic })}`
+  return `/portal?${new URLSearchParams({ tematica: topic })}`
 }

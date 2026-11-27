@@ -72,7 +72,7 @@ function HeaderControls() {
     <div ref={root} className="header-user-area" onBlur={event => {
       if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) setMenu(null)
     }}>
-      <div className="header-institutional-logo"><img src="/assets/DesdeAdentroLogo.svg" alt="Red de Redes · Desde adentro" /></div>
+      <div className="header-institutional-logo"><img src="/assets/DesdeAdentroLogo.svg" alt="BA Desde Adentro" /></div>
       <span className="header-user-separator" aria-hidden="true" />
       <button ref={notificationButton} type="button" className={`header-icon-button ${open === 'notifications' ? 'is-open' : ''}`} aria-label={`Notificaciones${unreadCount ? `: ${unreadCount} sin leer` : ''}`} aria-expanded={open === 'notifications'} aria-haspopup="dialog" aria-controls={`${id}-notifications`} onClick={() => toggle('notifications')} onKeyDown={event => {
         if (event.key === 'ArrowDown') { event.preventDefault(); setMenu({ type: 'notifications', routeKey: location.key }) }

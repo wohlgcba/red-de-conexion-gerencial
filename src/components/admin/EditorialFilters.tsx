@@ -36,6 +36,6 @@ export function EditorialFilters({ value, tray, data, onChange, onTrayChange, on
   return <div className="administration-filters">
     <label className="search-input administration-search"><Search size={19} aria-hidden="true" /><input aria-label="Buscar newsletters en Administración" value={value.query} maxLength={150} onChange={event => onChange('query', event.target.value)} placeholder="Buscar por título, autor, organismo o contenido…" autoComplete="off" /></label>
     {mobile ? <Button aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><SlidersHorizontal size={16} /> Filtros</Button> : fields}
-    {mobile && open && <DirectoryDialog title="Filtros de Newsletters" className="administration-filter-dialog" onClose={close} footer={<Button variant="primary" onClick={close}>Ver resultados</Button>}><div className="administration-filters">{fields}</div></DirectoryDialog>}
+    {mobile && open && <DirectoryDialog title="Filtros de publicaciones" className="administration-filter-dialog" onClose={close} footer={<Button variant="primary" onClick={close}>Ver resultados</Button>}><div className="administration-filters">{fields}</div></DirectoryDialog>}
   </div>
 }

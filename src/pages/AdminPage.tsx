@@ -6,7 +6,7 @@ import { AdminNewsletterPanel } from '../components/admin/AdminNewsletterPanel'
 import '../components/directory/directory.css'
 import '../components/admin/administration.css'
 
-const SECTIONS = [['', 'Directorio'], ['newsletters', 'Newsletters']] as const
+const SECTIONS = [['', 'Directorio'], ['newsletters', 'Portal']] as const
 
 export function AdminPage() {
   const { isAdmin } = useCatalog()

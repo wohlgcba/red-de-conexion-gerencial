@@ -1,4 +1,4 @@
-import { CheckCheck, LockKeyhole, LogOut, UserRound } from 'lucide-react'
+import { BookOpen, CheckCheck, LockKeyhole, LogOut, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { HeaderNotification } from '../../services/notifications'
 import { HeaderDropdown } from './HeaderDropdown'
@@ -10,6 +10,7 @@ export function UserMenu({ id, name, role, organization, onClose, onSignOut, bus
     <div className="header-user-details" role="presentation"><strong>{name}</strong><span>{role}</span>{organization && <span>{organization}</span>}</div>
     <div className="header-menu-group" role="presentation">
       <Link role="menuitem" to="/mi-cuenta" onClick={onClose}><UserRound size={18} /> Mi cuenta</Link>
+      <Link role="menuitem" to="/mis-publicaciones" onClick={onClose}><BookOpen size={18} /> Mis publicaciones</Link>
       <Link role="menuitem" to="/mi-cuenta/contrasena" onClick={onClose}><LockKeyhole size={18} /> Cambiar contraseña</Link>
     </div>
     <div className="header-menu-group" role="presentation">

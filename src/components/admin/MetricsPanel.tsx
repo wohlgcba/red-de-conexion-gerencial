@@ -15,7 +15,7 @@ import './metrics.css'
 
 const ACTIVITY: ChartSeries[] = [
   { key: 'visitors', label: 'Ingresaron a la Red', color: 'var(--metrics-visit)' },
-  { key: 'newsletterVisitors', label: 'Entraron a Newsletters', color: 'var(--metrics-newsletter)' },
+  { key: 'newsletterVisitors', label: 'Entraron al Portal', color: 'var(--metrics-newsletter)' },
 ]
 const GROWTH: ChartSeries[] = LEVELS.map(level => ({ key: level.id, label: level.plural, color: level.color }))
 
@@ -65,7 +65,7 @@ function Charts({ data }: { data: MetricsOverview }) {
         values={data.growth.map(bucket => [bucket.gerente, bucket.subgerente, bucket.otro])} extra={growthExtra} endLabel={formatNumber(total)} />
       <Coverage coverage={data.coverage} />
     </ChartCard>
-    <ChartCard title="Ingresos a la Red" description={<>Personas distintas que entraron a la Red y a Newsletters en cada período. {sources}</>}
+    <ChartCard title="Ingresos a la Red" description={<>Personas distintas que entraron a la Red y al Portal en cada período. {sources}</>}
       table={<table className="administration-table"><thead><tr><th>Período</th>{ACTIVITY.map(item => <th key={item.key}>{item.label}</th>)}<th>Aperturas de newsletters</th></tr></thead>
         <tbody>{data.activity.map((bucket, i) => <tr key={bucket.starts}><td>{periods[i]}</td><td className="metrics-number">{formatNumber(bucket.visitors)}</td><td className="metrics-number">{formatNumber(bucket.newsletterVisitors)}</td><td className="metrics-number">{formatNumber(bucket.newsletterViews)}</td></tr>)}</tbody></table>}>
       <MetricsColumnChart title="Ingresos a la Red" labels={labels} periods={periods} series={ACTIVITY}
@@ -81,8 +81,8 @@ function Rankings({ data }: { data: MetricsOverview }) {
   const terms = data.directory.topTerms.map(item => ({ id: item.term, label: item.term, value: item.searches,
     detail: `${formatNumber(item.people)} ${item.people === 1 ? 'persona' : 'personas'} · ${formatNumber(item.results ?? 0)} resultados en promedio` }))
   return <div className="metrics-rankings">
-    <MetricsRanking id="metrics-ranking" title="Newsletters más leídos" items={newsletters} unit={['lector', 'lectores']} color="var(--metrics-newsletter)"
-      empty="Todavía no hay lecturas de newsletters." description={<>{formatNumber(summary.newsletterReaders)} {summary.newsletterReaders === 1 ? 'integrante abrió' : 'integrantes abrieron'} al menos un newsletter · {formatNumber(summary.newsletterViews)} aperturas en total.</>} />
+    <MetricsRanking id="metrics-ranking" title="Publicaciones más leídas" items={newsletters} unit={['lector', 'lectores']} color="var(--metrics-newsletter)"
+      empty="Todavía no hay lecturas de publicaciones." description={<>{formatNumber(summary.newsletterReaders)} {summary.newsletterReaders === 1 ? 'integrante abrió' : 'integrantes abrieron'} al menos un newsletter · {formatNumber(summary.newsletterViews)} aperturas en total.</>} />
     <MetricsRanking title="Palabras más buscadas" items={terms} unit={['búsqueda', 'búsquedas']} color="var(--metrics-search)"
       empty="Todavía no hay búsquedas registradas." description={<>Lo que más se busca en el Directorio · {formatNumber(summary.searches)} búsquedas, {percent(summary.emptySearches, summary.searches)} sin resultados.</>} />
   </div>
@@ -101,7 +101,7 @@ export function MetricsPanel() {
     { id: 'members', label: 'Integrantes de la Red', value: summary?.members, note: summary && `${formatNumber(summary.gerentes)} gerentes · ${formatNumber(summary.subgerentes)} subgerentes`, icon: UsersRound, onClick: () => show('metrics-charts') },
     { id: 'entered', label: 'Ingresaron a la Red', value: summary?.entered, note: summary && `${percent(summary.entered, summary.members)} de los integrantes`, icon: LogIn, onClick: () => showPeople('entered') },
     { id: 'never', label: 'Nunca ingresaron', value: never, note: summary && never !== undefined && `${percent(never, summary.members)} · ver quiénes`, icon: UserRoundX, onClick: () => showPeople('never') },
-    { id: 'newsletters', label: 'Entraron a Newsletters', value: summary?.newsletterVisitors, note: summary && `${formatNumber(summary.newsletterReaders)} leyeron al menos uno`, icon: BookOpenText, onClick: () => show('metrics-ranking') },
+    { id: 'newsletters', label: 'Entraron al Portal', value: summary?.newsletterVisitors, note: summary && `${formatNumber(summary.newsletterReaders)} leyeron al menos una`, icon: BookOpenText, onClick: () => show('metrics-ranking') },
   ]
   return <div className="metrics-panel">
     <Surface className="administration-intro"><div><h1>Métricas</h1><p>Seguí cuántos integrantes tiene la Red, quiénes ingresan y qué newsletters se leen.</p></div><div className="administration-kpis">

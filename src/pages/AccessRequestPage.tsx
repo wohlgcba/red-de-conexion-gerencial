@@ -134,9 +134,9 @@ export function AccessRequestPage() {
   }
   const changeIdentity = () => { controller.current?.abort(); setStep(1); setProfiles([]); setProfile(EMPTY); setPassword(''); setMessage(''); setError(''); setSent(false); setViewingRequests(false); setSearchParams({}, { replace: true }) }
   if (!supabase) return <div className="auth-screen"><p>El servicio de ingreso no está configurado.</p></div>
-  return <main className="access-request-page"><div className="access-request-brand"><strong>RED DE CONEXIÓN GERENCIAL</strong><img src="/assets/DesdeAdentroLogo.svg" alt="BA Desde adentro" /></div>
+  return <main className="access-request-page"><div className="access-request-brand"><strong>Red de gerentes y mandos medios</strong><img src="/assets/DesdeAdentroLogo.svg" alt="BA Desde adentro" /></div>
     <div className="surface access-request-card"><h1>{showRequests ? 'Tu solicitud de ingreso' : 'Solicitar ingreso a la Red'}</h1><p>{showRequests ? 'Consultá el estado y las observaciones de tu solicitud.' : step === 1 ? 'Ingresá tu correo y CUIT para comenzar.' : step === 2 ? 'Verificá tu correo para continuar.' : 'La administración revisará tu solicitud.'}</p>
-      {showRequests ? <><MyDirectoryRequests key={user?.id} /><div className="access-request-footer"><Link className="btn btn-primary" to="/newsletters">Ir a la Red</Link><Button variant="ghost" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</Button></div></> : <>
+      {showRequests ? <><MyDirectoryRequests key={user?.id} /><div className="access-request-footer"><Link className="btn btn-primary" to="/portal">Ir a la Red</Link><Button variant="ghost" onClick={() => void requireSupabase().auth.signOut()}>Cerrar sesión</Button></div></> : <>
       <ol className="access-steps" aria-label="Pasos de ingreso">{['Correo y CUIT', 'Verificación', 'Tus datos'].map((label, index) => <li key={label} aria-current={step === index + 1 ? 'step' : undefined} className={step > index + 1 ? 'complete' : ''}><span>{step > index + 1 ? <Check size={15} /> : index + 1}</span>{label}</li>)}</ol>
       {step === 1 && <form onSubmit={event => void completeIdentity(event)}>
         <label>Correo electrónico<input type="email" autoComplete="off" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} placeholder="Escribí el correo que querés usar en la Red" /></label>
@@ -163,7 +163,7 @@ export function AccessRequestPage() {
         {matchingSession ? sent && <MyDirectoryRequests key={`${user?.id}-${sent}`} /> : <p role="alert">La sesión cambió. Volvé a verificar el correo elegido para continuar.</p>}
       </>}
       {message && <p role="status" className="access-verified">{message}</p>}{error && <p role="alert" className="form-error">{error}</p>}
-      <Link className="access-return" to="/newsletters">Volver al inicio</Link>
+      <Link className="access-return" to="/portal">Volver al inicio</Link>
       </>}
     </div>
   </main>

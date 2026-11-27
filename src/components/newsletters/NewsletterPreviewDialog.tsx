@@ -12,10 +12,10 @@ export default function NewsletterPreviewDialog({ item, author, isAdmin, busy, e
   onClose: () => void; onSave: (status: 'borrador' | 'pendiente' | 'publicado') => void; minor?: boolean
 }) {
   const close = useCallback(() => { if (!busy) onClose() }, [busy, onClose])
-  return <DirectoryDialog title="Vista previa del newsletter" titleIcon={<Eye size={22} />} onClose={close} busy={busy} className="newsletter-preview-dialog" footer={<>
+  return <DirectoryDialog title="Vista previa de la publicación" titleIcon={<Eye size={22} />} onClose={close} busy={busy} className="newsletter-preview-dialog" footer={<>
     <Button disabled={busy} onClick={close}>Volver a editar</Button>
     {!minor && <Button disabled={busy} onClick={() => onSave('borrador')}><PencilLine size={18} /> Guardar borrador</Button>}
-    <Button variant="primary" disabled={busy} onClick={() => onSave(isAdmin ? 'publicado' : 'pendiente')}><Send size={18} /> {minor ? 'Guardar corrección' : isAdmin ? 'Publicar newsletter' : 'Enviar a revisión'}</Button>
+    <Button variant="primary" disabled={busy} onClick={() => onSave(isAdmin ? 'publicado' : 'pendiente')}><Send size={18} /> {minor ? 'Guardar corrección' : isAdmin ? 'Publicar' : 'Enviar a revisión'}</Button>
   </>}>
     <p className="newsletter-preview-notice">Así se verá tu publicación. Revisá la portada, los datos y el contenido antes de terminar.</p>
     <NewsletterArticle item={item} author={author} />
